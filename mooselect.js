@@ -262,7 +262,7 @@ MooSelect = new Class({
       'left':pos.x,
       'top':pos.y
     });
-    input.setStyle(key,-9999);
+    //input.setStyle(key,-9999);
     input.store('MooSelect',this);
     if(input.hasClass('required')) {
       input.store('Formular-element-proxy',this.getContainer());
