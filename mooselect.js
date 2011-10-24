@@ -1,3 +1,27 @@
+/*
+---
+description: MooSelect is a full-fledged select, multiple select and autocomplete replacement for HTML forms.
+
+license: MIT License http://www.opensource.org/licenses/mit-license.php
+
+authors:
+- Matias Niemelä (matias [at] yearofmoo [dot] com)
+
+home:
+- http://www.yearofmoo.com/MooSelect
+
+requires:
+- core
+- more (Class.Refactor, Fx.Scroll, Locale.js)
+- optional (Form.Validator, Formular.js)
+- sprite.png
+- mooselect.css
+
+provides: 
+- MooSelect
+- MooSelect.Remote
+
+*/
 var MooSelect;
 
 (function($,$$) {
@@ -14,7 +38,7 @@ MooSelect = new Class({
     allowOtherResult : false,
     animations : true,
     fireSelectEvents : true,
-    hideHorizontal : true,
+    hideOriginalInputHorizontally : true,
 
     messages : {
       noResults : 'No results found for %(SEARCH)',
@@ -256,7 +280,7 @@ MooSelect = new Class({
   replaceInput : function() {
     var input = this.getInput();
     var pos = input.getPosition();
-    var key = this.options.hideHorizontal ? 'left' : 'top';
+    var key = this.options.hideOriginalInputHorizontally ? 'left' : 'top';
     input.setStyles({
       'position':'absolute',
       'left':pos.x,
@@ -1890,41 +1914,6 @@ MooSelect.Results.Remote = new Class({
 
 });
 
-})(document.id,$$);
-
-if(!Element.Events.outerClick) {
-  (function($,$$){
-    var events;
-    var check = function(e){
-      var target = $(e.target);
-      var parents = target.getParents();
-      events.each(function(item){
-        var element = item.element;
-        if (element != target && !parents.contains(element))
-          item.fn.call(element, e);
-      });
-    };
-    Element.Events.outerClick = {
-      onAdd: function(fn){
-        if(!events) {
-          window.addEvent('click', check);
-          events = [];
-        }
-        events.push({element: this, fn: fn});
-      },
-      onRemove: function(fn){
-        events = events.filter(function(item){
-          return item.element != this || item.fn != fn;
-        }, this);
-        if (!events.length) {
-          window.removeEvent('click', check);
-          events = null;
-        }
-      }
-    };
-  })(document.id,$$);
-}
-
 if(Form && Form.Validator && Form.Validator.add) {
 
   Form.Validator.add('validate-mooselect',{
@@ -1972,4 +1961,39 @@ if(Form && Form.Validator && Form.Validator.add) {
 
   });
 
+}
+
+})(document.id,$$);
+
+if(!Element.Events.outerClick) {
+  (function($,$$){
+    var events;
+    var check = function(e){
+      var target = $(e.target);
+      var parents = target.getParents();
+      events.each(function(item){
+        var element = item.element;
+        if (element != target && !parents.contains(element))
+          item.fn.call(element, e);
+      });
+    };
+    Element.Events.outerClick = {
+      onAdd: function(fn){
+        if(!events) {
+          window.addEvent('click', check);
+          events = [];
+        }
+        events.push({element: this, fn: fn});
+      },
+      onRemove: function(fn){
+        events = events.filter(function(item){
+          return item.element != this || item.fn != fn;
+        }, this);
+        if (!events.length) {
+          window.removeEvent('click', check);
+          events = null;
+        }
+      }
+    };
+  })(document.id,$$);
 }
