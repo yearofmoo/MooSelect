@@ -259,8 +259,8 @@ MooSelect = new Class({
     var key = this.options.hideHorizontal ? 'left' : 'top';
     input.setStyles({
       'position':'absolute',
-      'left':pos.x,
-      'top':pos.y
+      'left':-9999,
+      'top':-9999
     });
     //input.setStyle(key,-9999);
     input.store('MooSelect',this);
