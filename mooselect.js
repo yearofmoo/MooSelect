@@ -14,6 +14,7 @@ MooSelect = new Class({
     allowOtherResult : false,
     animations : true,
     fireSelectEvents : true,
+    hideHorizontal : true,
 
     messages : {
       noResults : 'No results found for %(SEARCH)',
@@ -105,7 +106,10 @@ MooSelect = new Class({
 
   setupEvents : function() {
     this.getInput().addEvents({
-      'focus':this.focus.bind(this),
+      'focus':function(event) {
+        event.stop();
+        this.focus();
+      }.bind(this),
       'blur':function() {
         if(this.isHovering()) {
           this.blur();
@@ -252,12 +256,13 @@ MooSelect = new Class({
   replaceInput : function() {
     var input = this.getInput();
     var pos = input.getPosition();
+    var key = this.options.hideHorizontal ? 'left' : 'top';
     input.setStyles({
       'position':'absolute',
-      'visibility':'hidden',
       'left':pos.x,
       'top':pos.y
     });
+    input.setStyle(key,-9999);
     input.store('MooSelect',this);
     if(input.hasClass('required')) {
       input.store('Formular-element-proxy',this.getContainer());
@@ -1819,20 +1824,22 @@ MooSelect.Results.Remote = new Class({
   },
 
   onRequestCancel : function() {
-
+    this.fireEvent('requestCancel');
   },
 
   onRequestComplete : function() {
-
+    this.fireEvent('requestComplete');
   },
 
   onRequestFailure : function() {
     this.onRequestEmpty();
+    this.fireEvent('requestFailure');
   },
 
   onRequestEmpty : function() {
     this.setResults([]);
     this.fireEvent('empty');
+    this.fireEvent('requestEmpty');
   },
 
   onRequestLoading : function() {
@@ -1840,6 +1847,7 @@ MooSelect.Results.Remote = new Class({
       this.hide();
     }
     this.fireEvent('loading');
+    this.fireEvent('requestLoading');
   },
 
   sanitizeResult : function(result) {
@@ -1876,7 +1884,7 @@ MooSelect.Results.Remote = new Class({
         this._filter(this.getSearchText());
       }
       this.hoverFirstResult();
-      this.fireEvent('response');
+      this.fireEvent('requestSuccess',[results,arguments]);
     }
   }
 
