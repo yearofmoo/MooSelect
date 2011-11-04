@@ -39,6 +39,7 @@ MooSelect = new Class({
     animations : true,
     fireSelectEvents : true,
     hideOriginalInputHorizontally : true,
+    allowDeselectSingle : false,
 
     messages : {
       noResults : 'No results found for %(SEARCH)',
@@ -55,7 +56,14 @@ MooSelect = new Class({
         this.input.set('name',name + '[]');
       }
     }
+    options = options || {};
+    var messages = options.messages;
+    delete options.messages;
     this.setOptions(options);
+    if(messages) {
+      Object.append(this.options.messages,messages);
+    }
+
     this.build();
     this.populate();
     this.hide();
@@ -79,7 +87,14 @@ MooSelect = new Class({
     klass += this.isMultiple() ? 'multiple' : 'single';
     this.container = new Element('div',{
       'class':klass
-    }).inject(this.getInput(),'after');
+    });
+    if(this.options.id) {
+      this.container.set('id',id);
+    }
+    if(this.options.classes) {
+      this.container.className += ' ' + this.options.classes;
+    }
+    this.container.inject(this.getInput(),'after');
   },
 
   populate : function(input) {
@@ -179,6 +194,8 @@ MooSelect = new Class({
     var input = this.getInput();
     options.placeholder = input.get('placeholder') || input.get('data-placeholder') || this.options.placeholder;
     options.classPrefix = this.options.classPrefix;
+    options.multiple = this.isMultiple();
+    options.allowDeselectSingle = this.options.allowDeselectSingle;
     this.stage = new MooSelect.Stage(options);
     this.stage.addEvents({
       'click' : this.toggle.bind(this),
@@ -728,6 +745,14 @@ MooSelect.Stage = new Class({
     this.build();
   },
 
+  isMultiple : function() {
+    return !!this.options.multiple;
+  },
+
+  allowDeselect : function() {
+    return this.isMultiple() || this.options.allowDeselectSingle;
+  },
+
   build : function() {
     var prefix = this.options.classPrefix || '';
     klass = prefix + 'stage';
@@ -848,13 +873,18 @@ MooSelect.Stage = new Class({
       var prefix = this.options.classPrefix || '';
       var x = element.getElement('.'+prefix+'x');
       var klass = prefix+this.options.resultClassName;
-      x.addEvent('click',function(event) {
-        event.stop();
-        var target = $(event.target);
-        target = target.hasClass(klass) ? target : target.getParent('.'+klass);
-        var value = target.retrieve('value');
-        this.removeResult(value,true);
-      }.bind(this));
+      if(this.allowDeselect()) {
+        x.addEvent('click',function(event) {
+          event.stop();
+          var target = $(event.target);
+          target = target.hasClass(klass) ? target : target.getParent('.'+klass);
+          var value = target.retrieve('value');
+          this.removeResult(value,true);
+        }.bind(this));
+      }
+      else {
+        x.destroy();
+      }
 
       this.removeActiveResult();
       this.fireEvent('addResult',[text,value]);

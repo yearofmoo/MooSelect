@@ -1,5 +1,7 @@
 .MooSelect-container {
   position:relative;
+  display:inline-block;
+  vertical-align:middle;
 }
 
 .MooSelect-container .MooSelect-stage {
