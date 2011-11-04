@@ -392,7 +392,6 @@ MooSelect = new Class({
     container.removeClass('closed');
     this.getMessage().hide();
     this.getResults().show();
-    this.focus();
     if(!this.isMultiple() && !this.getStage().hasResults()) {
       this.getStage().showPlaceholder();
     }
@@ -403,6 +402,7 @@ MooSelect = new Class({
     this.scrollToSelected();
     this.getStage().removeActiveResult();
     this.afterShow();
+    this.focus();
   },
 
   focus : function() {
@@ -1153,7 +1153,6 @@ MooSelect.Searcher = new Class({
   },
 
   onFocus : function() {
-    var i = Math.random() * 100;
     this.fireEvent('focus');
   },
 
