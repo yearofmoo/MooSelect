@@ -267,7 +267,6 @@ MooSelect = new Class({
       'select' : function(text,value) {
         this.onSelect(text,value);
         this.hide();
-        this.getInput().focus();
         this.fireEvent('select',[text,value]);
       }.bind(this),
       'linger' : function() {
