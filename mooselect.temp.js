@@ -73,13 +73,13 @@ MooSelect = new Class({
   build : function() {
     this.buildContainer();
     this.replaceInput();
+    this.setupEvents();
     this.buildStage();
     this.buildInner();
     this.buildSearcher();
     this.buildResults();
     this.buildMessage();
     this.resizeContainerBasedOnInput();
-    this.setupEvents();
   },
 
   buildContainer : function() {
@@ -144,16 +144,32 @@ MooSelect = new Class({
   },
 
   setupEvents : function() {
-    $(document.body).addEvent('click',function(event) {
-      this.hide();
-    }.bind(this));
-    this.getContainer().addEvent('click',function(event) {
-      event.stop();
-      this.toggle();
-    }.bind(this));
-    this.getInner().addEvent('click',function(event) {
-      event.stop();
+    this.getInput().addEvents({
+      'focus':function(event) {
+        event.stop();
+        this.focus();
+      }.bind(this),
+      'blur':function() {
+        if(this.isHovering()) {
+          this.blur();
+        }
+      }.bind(this),
+      'keydown' : function(event) {
+        var key = event.key;
+        if(['backspace','up','down','left','right','space','enter'].indexOf(key)>=0) {
+          this.onSpaceKeyInput(event);
+        }
+      }.bind(this),
+      'keyup':function(event) {
+        if(event.key=='enter' || event.key == 'esc') {
+          event.stop();
+        }
+        else if(['tab','shift'].indexOf(event.key)==-1) {
+          this.onSpaceKeyInput(event);
+        }
+      }.bind(this)
     });
+    this.getContainer().addEvent('outerClick',this.hide.bind(this));
   },
 
   onSpaceKeyInput : function(event) {
@@ -170,7 +186,7 @@ MooSelect = new Class({
       'styles':{
         'position':'absolute'   
       }
-    }).inject(document.body);
+    }).inject(document.body,'after');
     this.setZIndex(this.options.zIndex);
   },
 
@@ -235,23 +251,14 @@ MooSelect = new Class({
       'backspace' : this.onBackspace.bind(this),
       'search' : this.filterResultsFromSearch.bind(this),
       'clear' : this.filterResultsFromSearch.bind(this),
-      'enter' : function() {
-        if(this.isVisible()) {
-          this.selectAndClose();
-        }
-        else {
-          this.show();
-        }
-      }.bind(this),
+      'enter' : this.selectAndClose.bind(this),
       'up' : this.moveUp.bind(this),
       'down' : this.moveDown.bind(this),
       'escape' : function() {
         this.hide();
-        this.getSearcher().getInput().blur();
+        this.getInput().focus();
       }.bind(this),
-      'blur' : this.hide.bind(this),
-      'focus' : this.focus.bind(this),
-      'input' : this.focus.bind(this)
+      'blur' : this.delayHide.bind(this)
     });
 
     var container = $(this.isMultiple() ? this.getStage() : this.getInner());
@@ -295,15 +302,16 @@ MooSelect = new Class({
 
   replaceInput : function() {
     var input = this.getInput();
-    var sizes = input.getSize();
-    this.inputWidth = sizes.x;
-    this.inputHeight = sizes.y;
+    var pos = input.getPosition();
+    var key = this.options.hideOriginalInputHorizontally ? 'left' : 'top';
     input.setStyles({
-      display : 'none'
+      'position':'absolute',
+      'left':pos.x,
+      'top':pos.y
     });
+    input.setStyle(key,-9999);
     input.store('MooSelect',this);
     if(input.hasClass('required')) {
-      input.store('Form.Validator-proxy',this.getContainer());
       input.store('Formular-element-proxy',this.getContainer());
       input.addClass('validate-mooselect');
     }
@@ -320,17 +328,10 @@ MooSelect = new Class({
     return this.multiple;
   },
 
-  getInputWidth : function() {
-    return this.inputWidth;
-  },
-
-  getInputHeight : function() {
-    return this.inputHeight;
-  },
-
   resizeContainerBasedOnInput : function() {
+    var size = this.getInput().getSize();
     this.getContainer().setStyles({
-      'width' : this.getInputWidth()
+      'width' : size.x
     });
 
     var stage = $(this.getStage());
@@ -355,20 +356,13 @@ MooSelect = new Class({
     var pos = container.getPosition();
     var x = pos.x;
     var y = pos.y;
-    var width = container.getSize().x-2;
+    var width = container.getSize().x;
     var height = $(this.getStage()).getSize().y;
     y += height;
     this.getInner().setStyles({
       'top':y,
       'left':x,
       'width':width
-    });
-  },
-
-  hideInner : function() {
-    this.getInner().setStyles({
-      'left':-9999,
-      'top':-9999
     });
   },
 
@@ -385,13 +379,13 @@ MooSelect = new Class({
 
   show : function() {
     var container = this.getContainer();
-    var inner = this.getInner();
     this.stopHideDelay();
     container.addClass('open');
-    inner.addClass('open');
     container.removeClass('hover');
     container.removeClass('closed');
     this.getMessage().hide();
+    this.getInner().setStyle('display','block');
+    this.getSearcher().show();
     this.getResults().show();
     this.focus();
     if(!this.isMultiple() && !this.getStage().hasResults()) {
@@ -409,14 +403,11 @@ MooSelect = new Class({
   focus : function() {
     if(this.isVisible()) {
       this.stopHideDelay();
-    }
-    else if(this.isHovering()) {
-      this.show();
+      this.getSearcher().getInput().focus();
     }
     else {
       this.hover();
     }
-    this.getSearcher().getInput().focus();
   },
 
   isHovering : function() {
@@ -432,12 +423,12 @@ MooSelect = new Class({
   },
 
   hide : function() {
-    var inner = this.getInner();
     var container = this.getContainer();
     container.removeClass('open');
     container.removeClass('hover');
     container.addClass('closed');
-    this.hideInner();
+    this.getInner().setStyle('display','none');
+    this.getSearcher().hide();
     this.getResults().hide();
     this.stopHideDelay();
     this.clearSearch();
@@ -463,8 +454,7 @@ MooSelect = new Class({
   },
 
   toggle : function() {
-    var i = Math.random() * 100;
-    if(this.isHovering() || this.isHidden()) {
+    if(this.isHidden()) {
       this.show();
     }
     else {
@@ -474,7 +464,7 @@ MooSelect = new Class({
   },
 
   isHidden : function() {
-    return this.getContainer().hasClass('closed');
+    return !this.getContainer().hasClass('open');
   },
 
   isVisible : function() {
@@ -574,6 +564,14 @@ MooSelect = new Class({
     this.getResults().show();
   },
 
+  showSearcher : function() {
+    this.getSearcher().show();
+  },
+
+  hideSearcher : function() {
+    this.getSearcher().hide();
+  },
+
   search : function(text) {
     this.getMessage().hide();
     this.getSearcher().search(text);
@@ -659,6 +657,8 @@ MooSelect = new Class({
     else {
       this.setSelectedInputValue(value);
     }
+
+    this.clearSearch();
   },
 
   onEmpty : function() {
@@ -778,7 +778,6 @@ MooSelect.Stage = new Class({
 
     if(this.options.placeholder) {
       this.placeholder = new Element('div').set('class',prefix+'placeholder').inject(this.toElement());
-      this.placeholder.addEvent('click',this.onClick.bind(this));
       this.setPlaceholderText(this.options.placeholder);
     }
 
@@ -835,8 +834,7 @@ MooSelect.Stage = new Class({
     this.toElement().setStyle('display','none');
   },
 
-  onClick : function(event) {
-    event.stop();
+  onClick : function() {
     this.fireEvent('click');
   },
 
@@ -1076,25 +1074,18 @@ MooSelect.Searcher = new Class({
       case 'esc':
         event.stop();
         this.onEscapeKeyPress();
-        return;
       break;
-      case 'shift':
-      case 'capslock':
+      case 'enter':
+        event.stop(); 
+        this.enterRegistered = true;
       break;
       case 'tab':
-        this.getInput().blur();
         this.onBlur();
-        return;
       break;
       default:
         this.onSearchInput();
       break;
-      case 'enter':
-        event.stop();
-        return;
-      break;
     }
-    this.fireEvent('input');
   },
 
   onKeyInput : function(event) {
@@ -1102,7 +1093,13 @@ MooSelect.Searcher = new Class({
     switch(key) {
       case 'enter':
         event.stop();
-        this.fireEvent('enter');
+        if(this.enterRegistered) {
+          this.fireEvent('enter');
+        }
+        this.enterRegistered = true;
+      break;
+      case 'tab':
+        this.onBlur();
       break;
     }
   },
@@ -1133,7 +1130,13 @@ MooSelect.Searcher = new Class({
     return this.input;
   },
 
-  onShow : function() {
+  hide : function() {
+    this.getContainer().setStyle('display','none');
+  },
+
+  show : function() {
+    this.enterRegistered = false;
+    this.getContainer().setStyle('display','block');
   },
 
   getValue : function() {
@@ -1154,7 +1157,6 @@ MooSelect.Searcher = new Class({
   },
 
   onFocus : function() {
-    var i = Math.random() * 100;
     this.fireEvent('focus');
   },
 
@@ -1443,9 +1445,6 @@ MooSelect.Results = new Class({
       'onHover' : this.onHover.bind(this),
       'onBlur' : this.onBlur.bind(this),
       'onSelect' : this.onSelect.bind(this),
-      'onClick' : function() {
-        this.fireEvent('click');
-      }.bind(this),
       'onLinger' : function() {
         this.fireEvent('linger');
       }.bind(this)
@@ -1635,6 +1634,7 @@ MooSelect.Results = new Class({
   },
 
   onBlur : function(result) {
+
   },
 
   deSelectAll : function(skip) {
@@ -1696,11 +1696,13 @@ MooSelect.Results = new Class({
   },
 
   onSelect : function(result) {
-    this.blurAll(result);
     this.deSelectAll(result);
     var text = result.getText();
     var value = result.getValue();
     var index = $(result).retrieve('index');
+    this.deSelectAll();
+    this.blurAll();
+    this.hoverIndex = index;
     result.hover();
     this.fireEvent('select',[text,value]);
   }
@@ -1989,13 +1991,6 @@ if(Form && Form.Validator && Form.Validator.add) {
       });
     },
 
-    validateField : function(field,force) {
-      var former = this.options.ignoreHidden;
-      this.options.ignoreHidden = false;
-      this.previous(field,force);
-      this.options.ignoreHidden = former;
-    },
-
     onValidMooSelect : function(element) {
       var moo = element.retrieve('MooSelect');
       var container = moo.getContainer();
@@ -2015,3 +2010,36 @@ if(Form && Form.Validator && Form.Validator.add) {
 }
 
 })(document.id,$$);
+
+if(!Element.Events.outerClick) {
+  (function($,$$){
+    var events;
+    var check = function(e){
+      var target = $(e.target);
+      var parents = target.getParents();
+      events.each(function(item){
+        var element = item.element;
+        if (element != target && !parents.contains(element))
+          item.fn.call(element, e);
+      });
+    };
+    Element.Events.outerClick = {
+      onAdd: function(fn){
+        if(!events) {
+          window.addEvent('click', check);
+          events = [];
+        }
+        events.push({element: this, fn: fn});
+      },
+      onRemove: function(fn){
+        events = events.filter(function(item){
+          return item.element != this || item.fn != fn;
+        }, this);
+        if (!events.length) {
+          window.removeEvent('click', check);
+          events = null;
+        }
+      }
+    };
+  })(document.id,$$);
+}

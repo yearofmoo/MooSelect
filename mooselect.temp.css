@@ -1,7 +1,14 @@
 .MooSelect-container {
   position:relative;
   display:inline-block;
-  vertical-align:top;
+  vertical-align:middle;
+}
+
+.MooSelect-container .MooSelect-stage {
+  transition:border-color 0.25s linear;
+  -o-transition:border-color 0.25s linear;
+  -moz-transition:border-color 0.25s linear;
+  -webkit-transition:border-color 0.25s linear;
 }
 
 .MooSelect-container.single .MooSelect-stage {
@@ -46,11 +53,11 @@
   -webkit-border-radius : 4px;
 }
 
-.MooSelect-inner.single .MooSelect-searcher {
+.MooSelect-container.single .MooSelect-searcher {
   margin:0 5px 8px;
 }
 
-.MooSelect-inner.single .MooSelect-searcher,
+.MooSelect-container.single .MooSelect-searcher,
 .MooSelect-container.multiple .MooSelect-stage  {
   background:#ffffff;
   background:-webkit-gradient(linear, left bottom, left top, color-stop(0.85, white), color-stop(0.99, #eeeeee));
@@ -65,8 +72,7 @@
   position:relative;
 }
 
-.MooSelect-container.multiple.open .MooSelect-search-icon,
-.MooSelect-inner.single.open .MooSelect-searcher .MooSelect-search-icon {
+.MooSelect-container .MooSelect-searcher .MooSelect-search-icon {
   background:url('sprite.png') no-repeat -38px -20px;
   width:20px;
   height:20px;
@@ -76,43 +82,47 @@
   right:8px;
 }
 
-.MooSelect-searcher input {
+.MooSelect-container .MooSelect-searcher input {
   width:99%;
   line-height:100%;
   border:0;
   font-size:80%;
 }
 
-.MooSelect-searcher input:focus {
+.MooSelect-container .MooSelect-searcher input:focus {
   outline:0;
 }
 
-.MooSelect-inner .MooSelect-results {
+.MooSelect-container .MooSelect-results {
   overflow:auto;
 }
 
-.MooSelect-inner .MooSelect-result {
+.MooSelect-container .MooSelect-result {
   padding:4px;
   cursor:pointer;
 }
 
-.MooSelect-inner .MooSelect-result.grouped {
+.MooSelect-container .MooSelect-result.grouped {
   padding-left:20px;
 }
 
-.MooSelect-inner .MooSelect-group {
+.MooSelect-container .MooSelect-group {
   font-weight:bold;
   padding:3px;
   color:#999;
 }
 
-.MooSelect-inner .MooSelect-result:hover,
-.MooSelect-inner .MooSelect-result.hover {
+.MooSelect-container .MooSelect-result:hover,
+.MooSelect-container .MooSelect-result.hover {
   background:blue;
   color:white;
 }
 
-.MooSelect-inner.open {
+.MooSelect-container .MooSelect-result.selected {
+  font-weight:bold;
+}
+
+.MooSelect-container.open .MooSelect-inner {
   position:absolute;
   left:0;
   right:0;
@@ -211,10 +221,10 @@
 .MooSelect-container.hover .MooSelect-stage,
 .MooSelect-container.multiple.open .MooSelect-stage,
 .MooSelect-container.closed .MooSelect-stage:hover {
-  box-shadow:0 0 3px #999;
-  -o-box-shadow:0 0 3px #999;
-  -moz-box-shadow:0 0 3px #999;
-  -webkit-box-shadow:0 0 3px #999;
+  box-shadow:0 0 3px #bbb;
+  -o-box-shadow:0 0 3px #bbb;
+  -moz-box-shadow:0 0 3px #bbb;
+  -webkit-box-shadow:0 0 3px #bbb;
   border-color:#5897FB;
 }
 
