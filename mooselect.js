@@ -72,7 +72,8 @@ MooSelect.implement({
   },
 
   initialize : function(element,options) {
-    this.input = $(element);
+    element = $(element);
+    this.input = element;
     this.multiple = this.input.get('multiple');
     if(this.isMultiple()) {
       this.input.set('multiple','multiple');
