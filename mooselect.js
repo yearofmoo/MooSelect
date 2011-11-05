@@ -1709,9 +1709,11 @@ MooSelect.Results = new Class({
 
   matchSelectedAndHover : function() {
     var selected = this.getSelected();
-    var index = $(selected).retrieve('index');
-    selected.hover();
-    this.hoverIndex = index;
+    if(selected) {
+      var index = $(selected).retrieve('index');
+      selected.hover();
+      this.hoverIndex = index;
+    }
   },
 
   getScroller : function() {
