@@ -25,8 +25,33 @@ provides:
 var MooSelect;
 
 (function($,$$) {
+MooSelect = new Class;
 
-MooSelect = new Class({
+MooSelect.extend({
+
+  getNextTabIndex : function(form) {
+    var elms = form.getElements('input','select','textarea').filter(function(field) {
+      return field.type != 'hidden' && !field.disabled && field.isVisible();
+    });
+    var index = elms.length;
+    elms.each(function(elm) {
+      index = Math.max(index,elm.get('tabindex') || 0);
+    });
+    return ++index;
+  },
+
+  hideAllOthers : function(mooselect) {
+    $$('.MooSelectElement').each(function(moo) {
+      moo = moo.retrieve('MooSelect');
+      if(moo!=mooselect) {
+        moo.hide();
+      }
+    });
+  }
+
+});
+
+MooSelect.implement({
 
   Implements : [Options, Events],
 
@@ -57,6 +82,10 @@ MooSelect = new Class({
       }
     }
     options = options || {};
+    if(options.tabIndex==null) {
+      var form = options.form || element.getParent('form');
+      options.tabIndex = element.get('tabindex') || MooSelect.getNextTabIndex(form);
+    }
     var messages = options.messages;
     delete options.messages;
     this.setOptions(options);
@@ -86,7 +115,7 @@ MooSelect = new Class({
     var klass = this.options.classPrefix + this.options.className + ' ';
     klass += this.isMultiple() ? 'multiple' : 'single';
     this.container = new Element('div',{
-      'class':klass
+      'class':'MooSelectElement ' +klass
     });
     if(this.options.id) {
       this.container.set('id',id);
@@ -95,6 +124,7 @@ MooSelect = new Class({
       this.container.className += ' ' + this.options.classes;
     }
     this.container.inject(this.getInput(),'after');
+    this.container.store('MooSelect',this);
   },
 
   populate : function(input) {
@@ -229,6 +259,7 @@ MooSelect = new Class({
   buildSearcher : function() {
     options = this.options.searcherOptions || {};
     options.classPrefix = this.options.classPrefix;
+    options.tabIndex = this.options.tabIndex;
     this.searcher = new MooSelect.Searcher(options);
     this.searcher.addEvents({
       'emptyBackspace' : this.onEmptyBackspace.bind(this),
@@ -247,10 +278,12 @@ MooSelect = new Class({
       'down' : this.moveDown.bind(this),
       'escape' : function() {
         this.hide();
-        this.getSearcher().getInput().blur();
+        this.hover();
       }.bind(this),
-      'blur' : this.hide.bind(this),
-      'focus' : this.focus.bind(this),
+      'blur' : function() {
+        this.hide();
+      }.bind(this),
+      'focus' : this.show.bind(this),
       'input' : this.focus.bind(this)
     });
 
@@ -267,6 +300,7 @@ MooSelect = new Class({
       'select' : function(text,value) {
         this.onSelect(text,value);
         this.hide();
+        this.hover();
         this.fireEvent('select',[text,value]);
       }.bind(this),
       'linger' : function() {
@@ -300,6 +334,7 @@ MooSelect = new Class({
     input.setStyles({
       display : 'none'
     });
+    input.set('tabindex','');
     input.store('MooSelect',this);
     if(input.hasClass('required')) {
       input.store('Form.Validator-proxy',this.getContainer());
@@ -399,10 +434,11 @@ MooSelect = new Class({
       this.getStage().hidePlaceholder();
     }
     this.repositionResults();
-    this.scrollToSelected();
+    this.scrollToHoverResult();
     this.getStage().removeActiveResult();
     this.afterShow();
     this.focus();
+    MooSelect.hideAllOthers(this);
   },
 
   focus : function() {
@@ -583,8 +619,8 @@ MooSelect = new Class({
   },
 
   filterResultsFromSearch : function(text) {
-    this.getStage().removeActiveResult();
     this.getMessage().hide();
+    this.getStage().removeActiveResult();
     var results = this.getResults();
     results.filter(text || '');
     results.show();
@@ -641,6 +677,10 @@ MooSelect = new Class({
 
   scrollToSelected : function() {
     this.getResults().scrollToSelected();
+  },
+
+  scrollToHoverResult : function() {
+    this.getResults().scrollToHoverResult();
   },
 
   onSelect : function(text,value) {
@@ -1038,6 +1078,9 @@ MooSelect.Searcher = new Class({
       'class' : prefix + 'searcher-input',
       'type' : 'text'
     }).inject(this.container);
+    if(this.options.tabIndex) {
+      this.input.set('tabindex',this.options.tabIndex);
+    }
     this.setupEvents();
 
     this.searchIcon = new Element('div',{
@@ -1081,7 +1124,6 @@ MooSelect.Searcher = new Class({
       case 'capslock':
       break;
       case 'tab':
-        this.getInput().blur();
         this.onBlur();
         return;
       break;
@@ -1525,6 +1567,7 @@ MooSelect.Results = new Class({
 
   hide : function() {
     this.getContainer().setStyle('display','none');
+    this.matchSelectedAndHover();
   },
 
   show : function() {
@@ -1546,7 +1589,10 @@ MooSelect.Results = new Class({
       this.onEmpty();
     }
     else {
-      this.hoverFirstResult();
+      var hover = this.getHoverResult();
+      if(!hover || !hover.isVisible()) {
+        this.hoverFirstResult();
+      }
     }
   },
 
@@ -1655,6 +1701,13 @@ MooSelect.Results = new Class({
     result.deSelect();
   },
 
+  matchSelectedAndHover : function() {
+    var selected = this.getSelected();
+    var index = $(selected).retrieve('index');
+    selected.hover();
+    this.hoverIndex = index;
+  },
+
   getScroller : function() {
     return this.scroller;
   },
@@ -1700,6 +1753,7 @@ MooSelect.Results = new Class({
     var value = result.getValue();
     var index = $(result).retrieve('index');
     result.hover();
+    this.hoverIndex = index;
     this.fireEvent('select',[text,value]);
   }
 
