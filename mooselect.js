@@ -2052,8 +2052,9 @@ if(Form && Form.Validator && Form.Validator.add) {
     validateField : function(field,force) {
       var former = this.options.ignoreHidden;
       this.options.ignoreHidden = false;
-      this.previous(field,force);
+      var result = this.previous(field,force);
       this.options.ignoreHidden = former;
+      return result;
     },
 
     onValidMooSelect : function(element) {
