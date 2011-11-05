@@ -67,7 +67,7 @@ MooSelect.implement({
     allowDeselectSingle : false,
 
     messages : {
-      noResults : 'No results found for %(SEARCH)',
+      noResults : 'No results found for %(SEARCH)'
     }
   },
 
