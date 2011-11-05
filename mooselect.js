@@ -84,8 +84,13 @@ MooSelect.implement({
     }
     options = options || {};
     if(options.tabIndex==null) {
-      var form = options.form || element.getParent('form');
-      options.tabIndex = element.get('tabindex') || MooSelect.getNextTabIndex(form);
+      options.tabIndex = element.get('tabindex');
+      if(options.tabIndex == null) {
+        var form = options.form || element.getParent('form');
+        if(form) {
+          options.tabIndex = MooSelect.getNextTabIndex(form);
+        }
+      }
     }
     var messages = options.messages;
     delete options.messages;
