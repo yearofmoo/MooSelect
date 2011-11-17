@@ -178,7 +178,7 @@ MooSelect.implement({
       return {
         'text' : option.text,
         'value' : option.value,
-        'selected' : this.isOptionSelected(option)
+        'selected' : option ? this.isOptionSelected(option) : option;
       };
     }
   },
