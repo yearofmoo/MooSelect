@@ -178,13 +178,18 @@ MooSelect.implement({
       return {
         'text' : option.text,
         'value' : option.value,
-        'selected' : option ? this.isOptionSelected(option) : false
+        'selected' : this.isOptionSelected(option)
       };
     }
   },
 
   isOptionSelected : function(option) {
-    return option.selectedIndex > 0 || option.getAttribute('selected') != null;
+    if(typeOf(option) == 'element') {
+      return option.selectedIndex > 0 || option.getAttribute('selected') != null;
+    }
+    else {
+      return option.selected;
+    }
   },
 
   setupEvents : function() {
