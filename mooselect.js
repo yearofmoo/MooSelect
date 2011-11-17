@@ -57,9 +57,9 @@ MooSelect.implement({
 
   options : {
     zIndex : 1000,
+    selectFirstOnDefault : false,
     className : 'container',
     classPrefix : 'MooSelect-',
-    skipSelected : false,
     allowOtherResult : false,
     animations : true,
     fireSelectEvents : true,
@@ -102,7 +102,6 @@ MooSelect.implement({
     this.build();
     this.populate();
     this.hide();
-    this.options.skipSelected = false
   },
 
   build : function() {
@@ -151,6 +150,11 @@ MooSelect.implement({
     }
 
     this.getResults().setResults(results);
+
+    if(this.options.selectFirstOnDefault && !this.hasSelectedValue()) {
+      this.getResults().selectFirst();
+    }
+
     this.fireEvent('populate',[items,results]);
   },
 
@@ -174,9 +178,13 @@ MooSelect.implement({
       return {
         'text' : option.text,
         'value' : option.value,
-        'selected' : this.options.skipSelected ? false : !!option.selected
+        'selected' : this.isOptionSelected(option)
       };
     }
+  },
+
+  isOptionSelected : function(option) {
+    return option.selectedIndex > 0 || option.getAttribute('selected') != null;
   },
 
   setupEvents : function() {
@@ -669,6 +677,13 @@ MooSelect.implement({
 
   select : function(option) {
     this.getResults().select(option);
+  },
+
+  selectByValue : function(value) {
+    var result = this.getResults().getResultByValue(value);
+    if(result) {
+      this.select(result);
+    }
   },
 
   moveUp : function() {
@@ -1734,6 +1749,10 @@ MooSelect.Results = new Class({
     if(!this.isEmpty()) {
       return this.getHoverResult() || this.getResult(0);
     }
+  },
+
+  selectFirst : function() {
+    this.getResult(0).select();
   },
 
   scrollToSelected : function(result) {
