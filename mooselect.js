@@ -1934,7 +1934,7 @@ MooSelect.Results.Remote = new Class({
 
   prepareSearchData : function(text) {
     var data;
-    var fn = this.options.urlPrepareFn;
+    var fn = this.options.dataPrepareFn;
     if(fn && typeOf(fn) == 'function') {
       data = fn(text);
     }
@@ -1948,7 +1948,7 @@ MooSelect.Results.Remote = new Class({
 
   prepareSearchURL : function(search) {
     var url = this.getURL();
-    var fn = this.options.dataPrepareFn;
+    var fn = this.options.urlPrepareFn;
     if(fn) {
       url = fn(url,search);
     }
