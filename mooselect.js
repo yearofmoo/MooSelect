@@ -1920,17 +1920,29 @@ MooSelect.Results.Remote = new Class({
         this.onRequestSuccess.apply(this,cache);
       }
       else {
-        var key = this.options.requestSearchParam;
         var request = this.getRequester();
         request.cancel();
-        request.options.data = {}
-        request.options.data[key] = search;
+        request.options.data = this.prepareSearchData(search);
         request.send();
       }
     }
     else {
       this.fireEvent('minSearch');
     }
+  },
+
+  prepareSearchData : function(text) {
+    var data;
+    var fn = this.options.customFilterMethod;
+    if(fn && typeOf(fn) == 'function') {
+      data = fn(text);
+    }
+    else {
+      data = {};
+      var key = this.options.requestSearchParam;
+      data[key] = text;
+    }
+    return data;
   },
 
   getCachedResponse : function(search) {
