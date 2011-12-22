@@ -1922,6 +1922,7 @@ MooSelect.Results.Remote = new Class({
       else {
         var request = this.getRequester();
         request.cancel();
+        request.options.url = this.prepareSearchURL(search);
         request.options.data = this.prepareSearchData(search);
         request.send();
       }
@@ -1933,7 +1934,7 @@ MooSelect.Results.Remote = new Class({
 
   prepareSearchData : function(text) {
     var data;
-    var fn = this.options.customFilterMethod;
+    var fn = this.options.urlPrepareFn;
     if(fn && typeOf(fn) == 'function') {
       data = fn(text);
     }
@@ -1943,6 +1944,15 @@ MooSelect.Results.Remote = new Class({
       data[key] = text;
     }
     return data;
+  },
+
+  prepareSearchURL : function(search) {
+    var url = this.getURL();
+    var fn = this.options.dataPrepareFn;
+    if(fn) {
+      url = fn(url,search);
+    }
+    return url;
   },
 
   getCachedResponse : function(search) {
@@ -1957,6 +1967,10 @@ MooSelect.Results.Remote = new Class({
     this.cache = {};
   },
 
+  getURL : function() {
+    return this.options.url || this.options.requestOptions.url;
+  },
+
   getRequester : function() {
     if(!this.requester) {
       var fn = this.options.requestResponseHandler;
@@ -1966,7 +1980,7 @@ MooSelect.Results.Remote = new Class({
 
       var C = this.options.requestClass;
       var options = this.options.requestOptions || {};
-      options.url = this.options.url ? this.options.url : options.url;
+      options.url = this.getURL();
       this.requester = new C(options);
       this.requester.addEvents({
         'success' : this.onRequestSuccess.bind(this),
