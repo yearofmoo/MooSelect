@@ -64,7 +64,7 @@ MooSelect.implement({
     animations : true,
     fireSelectEvents : true,
     hideOriginalInputHorizontally : true,
-    allowDeselectSingle : false,
+    allowDeselectSingle : true,
 
     messages : {
       noResults : 'No results found for %(SEARCH)'
@@ -259,8 +259,8 @@ MooSelect.implement({
         this.fireEvent('resultClick',[result]);
       }.bind(this),
       'removeResult' : function(text,value) {
-        this.repositionResults();
         if(this.isMultiple()) {
+          this.repositionResults();
           this.forceShowResults();
           var results = this.getStage().getResultValues();
           this.forceHideResults(results);
@@ -550,15 +550,17 @@ MooSelect.implement({
       }
     }
     if(index > 0) {
-      input.selectedIndex = index;
+      if(index != input.selectedIndex) {
+        input.selectedIndex = index;
+        if(this.options.fireSelectEvents) {
+          input.fireEvent('change');
+        }
+        this.fireEvent('change');
+      }
     }
     else {
       input.selectedIndex = 0;
     }
-    if(this.options.fireSelectEvents) {
-      input.fireEvent('change');
-    }
-    this.fireEvent('change');
   },
 
   clearSelectedInputValue : function() {
@@ -1016,8 +1018,12 @@ MooSelect.Stage = new Class({
   },
 
   clearResults : function() {
-    var results = this.getResultValues() || {};
-    results.each(this.removeResult,this);
+    var results = this.getResults();
+    Object.each(results,function(result) {
+      result.destroy();
+    });
+    this.results = [];
+    this.total = 0;
   },
 
   onNoResults : function() {
