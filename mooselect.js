@@ -314,6 +314,7 @@ MooSelect.implement({
     var options = this.options.resultsOptions || {};
     options.multiple = this.isMultiple();
     options.classPrefix = this.options.classPrefix;
+    options.customBuildHTML = this.options.customBuildHTML;
     this.results = this.buildResultsObject(options);
     this.results.addEvents({
       'select' : function(text,value) {
@@ -1262,8 +1263,9 @@ MooSelect.Result = new Class({
   build : function() {
     var klass = this.options.classPrefix || '';
     klass += 'result';
+    var html = this.getInnerHTML();
     this.element = new Element('div').addClass(klass);
-    this.element.set('html',this.getText());
+    this.element.set('html',html);
     this.element.store('value',this.getValue());
     this.setupEvents();
   },
@@ -1294,6 +1296,19 @@ MooSelect.Result = new Class({
 
   toElement : function() {
     return this.element;
+  },
+
+  getInnerHTML : function() {
+    var html = this.getText();
+    var fn = this.options.customBuildHTML;
+    if(fn) {
+      html = fn(this,html);
+    }
+    return html;
+  },
+
+  getRawData : function() {
+    return this.options.rawData;
   },
 
   getText : function() {
@@ -1511,6 +1526,8 @@ MooSelect.Results = new Class({
 
   buildResult : function(result) {
     return new MooSelect.Result(result.text,result.value,{
+      'rawData' : result,
+      'customBuildHTML' : this.options.customBuildHTML ? this.options.customBuildHTML : null,
       'classPrefix' : this.options.classPrefix,
       'onHover' : this.onHover.bind(this),
       'onBlur' : this.onBlur.bind(this),
