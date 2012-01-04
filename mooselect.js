@@ -1793,6 +1793,11 @@ MooSelect.Results = new Class({
     result.hover();
     this.hoverIndex = index;
     this.fireEvent('select',[text,value]);
+  },
+
+  destroy : function() {
+    this.getContainer().destroy();
+    this.container = null;
   }
 
 });
