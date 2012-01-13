@@ -518,8 +518,7 @@ MooSelect.implement({
   },
 
   toggle : function() {
-    var i = Math.random() * 100;
-    if(this.isHovering() || this.isHidden()) {
+    if(!this.isVisible()) {
       this.show();
     }
     else {
@@ -1000,7 +999,7 @@ MooSelect.Stage = new Class({
         result.destroy();
         if(!this.hasResults()) {
           this.total = 0;
-          this.onNoResults();
+          his.onNoResults();
         }
         this.fireEvent('removeResult',[text,value]);
       }.bind(this);
@@ -1123,7 +1122,9 @@ MooSelect.Searcher = new Class({
 
   setupEvents : function() {
     this.getInput().addEvents({
-      'blur' : this.onBlur.bind(this),
+      'blur' : function() {
+        this.focus = false;
+      }.bind(this),
       'focus' : this.onFocus.bind(this),
       'click' : this.onClick.bind(this),
       'keyup' : this.onKeyInput.bind(this),
@@ -1236,7 +1237,6 @@ MooSelect.Searcher = new Class({
   },
 
   onBlur : function() {
-    this.focus = false;
     this.fireEvent('blur');
   },
 
