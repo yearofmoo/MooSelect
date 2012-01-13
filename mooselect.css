@@ -242,6 +242,17 @@
   background:none;
 }
 
+.MooSelect-searcher.disabled {
+  position:absolute;
+  height:1px!important;
+  top:-9999px;
+}
+
+.MooSelect-searcher.disabled + .MooSelect-results {
+  border-top: 1px solid #b4b4b4;
+  margin-top:-25px;
+}
+
 .MooSelect-container.multiple .MooSelect-stage-result {
   position:relative;
   padding-right:20px;

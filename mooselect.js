@@ -66,7 +66,9 @@ MooSelect.implement({
     animations : true,
     fireSelectEvents : true,
     hideOriginalInputHorizontally : true,
-    allowDeselectSingle : true,
+
+    allowDeselectSingle : false,
+    disableSearcher : false,
 
     customBuildResultHTML : null,
     customBuildStageResultHTML : null,
@@ -323,6 +325,10 @@ MooSelect.implement({
       'input' : this.focus.bind(this)
     });
 
+    if(this.options.disableSearcher) {
+      this.searcher.disable();
+    }
+
     var container = $(this.isMultiple() ? this.getStage() : this.getInner());
     $(this.searcher).inject(container,'bottom');
   },
@@ -563,6 +569,10 @@ MooSelect.implement({
 
   isVisible : function() {
     return !this.isHidden();
+  },
+
+  isSearcherDisabled : function() {
+    return this.getSearcher().isDisabled();
   },
 
   getInput : function() {
@@ -1343,6 +1353,22 @@ MooSelect.Searcher = new Class({
     return this.getContainer();
   },
 
+  disable : function() {
+    this.toElement().addClass('disabled');
+  },
+
+  enable : function() {
+    this.toElement().removeClass('disabled');
+  },
+
+  isDisabled : function() {
+    return this.toElement().hasClass('disabled');
+  },
+
+  isEnabled : function() {
+    return !this.isDisabled();
+  },
+
   destroy : function() {
     this.toElement().destroy();
   }
@@ -1956,6 +1982,7 @@ MooSelect.Remote = new Class({
 
   initialize : function(element,options) {
     options = options || {};
+    options.disableSearcher = false;
     options.remoteOptions = options.remoteOptions || {};
     if(options.url) {
       options.remoteOptions.url = options.url;
