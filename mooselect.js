@@ -68,6 +68,9 @@ MooSelect.implement({
     hideOriginalInputHorizontally : true,
     allowDeselectSingle : true,
 
+    customBuildResultHTML : null,
+    customBuildStageResultHTML : null,
+
     messages : {
       noResults : 'No results found for %(SEARCH)'
     }
@@ -245,6 +248,7 @@ MooSelect.implement({
     options.multiple = this.isMultiple();
     options.allowDeselectSingle = this.options.allowDeselectSingle;
     options.globalClassName = this.options.globalClassName;
+    options.customBuildStageResultHTML = this.options.customBuildStageResultHTML;
     options.globalClassPrefix = this.options.globalClassPrefix;
     this.stage = new MooSelect.Stage(options);
     this.stage.addEvents({
@@ -327,7 +331,7 @@ MooSelect.implement({
     var options = this.options.resultsOptions || {};
     options.multiple = this.isMultiple();
     options.classPrefix = this.options.classPrefix;
-    options.customBuildHTML = this.options.customBuildHTML;
+    options.customBuildResultHTML = this.options.customBuildResultHTML;
     this.results = this.buildResultsObject(options);
     this.results.addEvents({
       'select' : function(text,value) {
@@ -1148,6 +1152,10 @@ MooSelect.Stage = new Class({
   },
 
   buildResultElementHTML : function(text,value) {
+    var fn = this.options.customBuildStageResultHTML;
+    if(fn) {
+      text = fn(text,value);
+    }
     return text;
   },
 
@@ -1402,7 +1410,7 @@ MooSelect.Result = new Class({
 
   getInnerHTML : function() {
     var html = this.getText();
-    var fn = this.options.customBuildHTML;
+    var fn = this.options.customBuildResultHTML;
     if(fn) {
       html = fn(this,html);
     }
@@ -1637,7 +1645,7 @@ MooSelect.Results = new Class({
       'globalClassName' : this.options.globalClassName,
       'globalClassPrefix' : this.options.globalClassPrefix,
       'rawData' : result,
-      'customBuildHTML' : this.options.customBuildHTML ? this.options.customBuildHTML : null,
+      'customBuildResultHTML' : this.options.customBuildResultHTML ? this.options.customBuildResultHTML : null,
       'classPrefix' : this.options.classPrefix,
       'onHover' : this.onHover.bind(this),
       'onBlur' : this.onBlur.bind(this),
