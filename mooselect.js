@@ -315,7 +315,7 @@ MooSelect.implement({
       'blur' : function() {
         this.hide();
       }.bind(this),
-      'focus' : this.show.bind(this),
+      'focus' : this.toggleFocus.bind(this),
       'input' : this.focus.bind(this)
     });
 
@@ -452,6 +452,15 @@ MooSelect.implement({
     var that = this.getResults();
     results = results || that.getResults();
     results.each(that.forceShowResult,that);
+  },
+
+  toggleFocus : function() {
+    if(!this.isMultiple() && !this.isVisible()) {
+      this.hover();
+    }
+    else {
+      this.show();
+    }
   },
 
   show : function() {
