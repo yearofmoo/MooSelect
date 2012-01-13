@@ -1124,6 +1124,9 @@ MooSelect.Searcher = new Class({
   setupEvents : function() {
     this.getInput().addEvents({
       'focus' : this.onFocus.bind(this),
+      'click' : function(event) {
+        event.stopPropagation();
+      },
       'keyup' : this.onKeyInput.bind(this),
       'keydown' : this.onKeyMovement.bind(this)
     }); 
@@ -1227,7 +1230,8 @@ MooSelect.Searcher = new Class({
     return this.getValue().length > 0;
   },
 
-  onFocus : function() {
+  onFocus : function(event) {
+    event.stop();
     this.fireEvent('focus');
   },
 
