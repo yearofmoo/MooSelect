@@ -60,6 +60,8 @@ MooSelect.implement({
     selectFirstOnDefault : false,
     className : 'container',
     classPrefix : 'MooSelect-',
+    globalClassName : null,
+    globalClassPrefix : null,
     allowOtherResult : false,
     animations : true,
     fireSelectEvents : true,
@@ -117,16 +119,23 @@ MooSelect.implement({
   },
 
   buildContainer : function() {
-    var klass = this.options.classPrefix + this.options.className + ' ';
+    var options = this.options;
+    var klass = options.classPrefix + options.className + ' ';
     klass += this.isMultiple() ? 'multiple' : 'single';
     this.container = new Element('div',{
-      'class':'MooSelectElement ' +klass
+      'class':'MooSelectElement ' + klass
     });
-    if(this.options.id) {
-      this.container.set('id',id);
+    if(options.globalClassName) {
+      this.container.addClass(options.globalClassName);
     }
-    if(this.options.classes) {
-      this.container.className += ' ' + this.options.classes;
+    if(options.globalClassPrefix) {
+      this.container.addClass(options.globalClassPrefix + options.className);
+    }
+    if(options.id) {
+      this.container.set('id',options.id);
+    }
+    if(options.classes) {
+      this.container.className += ' ' + options.classes;
     }
     this.container.inject(this.getInput(),'after');
     this.container.store('MooSelect',this);
@@ -235,6 +244,8 @@ MooSelect.implement({
     options.classPrefix = this.options.classPrefix;
     options.multiple = this.isMultiple();
     options.allowDeselectSingle = this.options.allowDeselectSingle;
+    options.globalClassName = this.options.globalClassName;
+    options.globalClassPrefix = this.options.globalClassPrefix;
     this.stage = new MooSelect.Stage(options);
     this.stage.addEvents({
       'click' : this.toggle.bind(this),
@@ -279,6 +290,8 @@ MooSelect.implement({
     options = this.options.searcherOptions || {};
     options.classPrefix = this.options.classPrefix;
     options.tabIndex = this.options.tabIndex;
+    options.globalClassName = this.options.globalClassName;
+    options.globalClassPrefix = this.options.globalClassPrefix;
     this.searcher = new MooSelect.Searcher(options);
     this.searcher.addEvents({
       'emptyBackspace' : this.onEmptyBackspace.bind(this),
@@ -332,12 +345,16 @@ MooSelect.implement({
   },
 
   buildResultsObject : function(options) {
+    options.globalClassName = this.options.globalClassName;
+    options.globalClassPrefix = this.options.globalClassPrefix;
     return new MooSelect.Results(options);
   },
 
   buildMessage : function() {
     var options = this.options.messageOptions || {};
     options.classPrefix = this.options.classPrefix;
+    options.globalClassName = this.options.globalClassName;
+    options.globalClassPrefix = this.options.globalClassPrefix;
     this.message = new MooSelect.Message(options);
     $(this.message).inject(this.getInner(),'bottom');
   },
@@ -789,7 +806,14 @@ MooSelect.Message = new Class({
 
   setType : function(type) {
     var prefix = this.options.classPrefix || '';
-    this.toElement().className = prefix + 'message ' + prefix + 'message-'+type;
+    var elm = this.toElement();
+    elm.className = prefix + 'message ' + prefix + 'message-'+type;
+    if(this.options.globalClassName) {
+      elm.addClass(this.options.globalClassName);
+    }
+    if(this.options.globalClassPrefix) {
+      elm.addClass(this.options.globalClassPrefix + 'message');
+    }
   },
 
   toElement : function() {
@@ -843,19 +867,48 @@ MooSelect.Stage = new Class({
     this.element.addEvent('click',this.onClick.bind(this));
     this.listElement = new Element('div').set('class',prefix + 'stage-results').inject(this.element,'top');
 
+    if(this.options.globalClassName) {
+      this.element.addClass(this.options.globalClassName);
+      this.listElement.addClass(this.options.globalClassName);
+    }
+    if(this.options.globalClassPrefix) {
+      this.element.addClass(this.options.globalClassPrefix + 'stage');
+      this.listElement.addClass(this.options.globalClassPrefix + 'stage-results');
+    }
+
     if(this.options.placeholder) {
       this.placeholder = new Element('div').set('class',prefix+'placeholder').inject(this.toElement());
       this.placeholder.addEvent('click',this.onClick.bind(this));
+
+      if(this.options.globalClassName) {
+        this.placeholder.addClass(this.options.globalClassName);
+      }
+      if(this.options.globalClassPrefix) {
+        this.placeholder.addClass(this.options.globalClassPrefix + 'placeholder');
+      }
+
       this.setPlaceholderText(this.options.placeholder);
     }
 
     this.arrowContainer = new Element('div',{
       'class' : prefix + 'arrow-background'
     }).inject(this.element);
+    if(this.options.globalClassName) {
+      this.arrowContainer.addClass(this.options.globalClassName);
+    }
+    if(this.options.globalClassPrefix) {
+      this.arrowContainer.addClass(this.options.globalClassPrefix + 'arrow-background');
+    }
 
     this.arrow = new Element('div',{
       'class' : prefix + 'arrow'
     }).inject(this.arrowContainer);
+    if(this.options.globalClassName) {
+      this.arrow.addClass(this.options.globalClassName);
+    }
+    if(this.options.globalClassPrefix) {
+      this.arrow.addClass(this.options.globalClassPrefix + 'arrow');
+    }
   },
 
   hasPlaceholder : function() {
@@ -1076,6 +1129,12 @@ MooSelect.Stage = new Class({
       }
     }).adopt(new Element('span').addClass(prefix+'x'));
     element.store('text',text);
+    if(this.options.globalClassName) {
+      element.addClass(this.options.globalClassName);
+    }
+    if(this.options.globalClassPrefix) {
+      element.addClass(this.options.globalClassPrefix + this.options.resultClassName);
+    }
     return element;
   },
 
@@ -1112,6 +1171,14 @@ MooSelect.Searcher = new Class({
     }).inject(this.container);
     if(this.options.tabIndex) {
       this.input.set('tabindex',this.options.tabIndex);
+    }
+    if(this.options.globalClassName) {
+      this.container.addClass(this.options.globalClassName);
+      this.input.addClass(this.options.globalClassName);
+    }
+    if(this.options.globalClassPrefix) {
+      this.container.addClass(this.options.globalClassPrefix + 'searcher');
+      this.input.addClass(this.options.globalClassPrefix + 'searcher-input');
     }
     this.setupEvents();
 
@@ -1269,6 +1336,10 @@ MooSelect.Result = new Class({
 
   Implements : [Options, Events],
 
+  options : {
+
+  },
+
   initialize : function(text,value,options) {
     this.text = text;
     this.value = value;
@@ -1283,6 +1354,12 @@ MooSelect.Result = new Class({
     this.element = new Element('div').addClass(klass);
     this.element.set('html',html);
     this.element.store('value',this.getValue());
+    if(this.options.globalClassName) {
+      this.element.addClass(this.options.globalClassName);
+    }
+    if(this.options.globalClassPrefix) {
+      this.element.addClass(this.options.globalClassPrefix + 'result');
+    }
     this.setupEvents();
   },
 
@@ -1448,6 +1525,12 @@ MooSelect.Results = new Class({
     var klass = this.options.classPrefix || '';
     klass += 'results';
     this.container = new Element('div').set('class',klass);
+    if(options.globalClassName) {
+      this.container.addClass(this.options.globalClassName);
+    }
+    if(options.globalClassPrefix) {
+      this.container.addClass(this.options.globalClassPrefix + 'results');
+    }
     this.buildScroller();
   },
 
@@ -1542,6 +1625,8 @@ MooSelect.Results = new Class({
 
   buildResult : function(result) {
     return new MooSelect.Result(result.text,result.value,{
+      'globalClassName' : this.options.globalClassName,
+      'globalClassPrefix' : this.options.globalClassPrefix,
       'rawData' : result,
       'customBuildHTML' : this.options.customBuildHTML ? this.options.customBuildHTML : null,
       'classPrefix' : this.options.classPrefix,
@@ -1911,6 +1996,8 @@ MooSelect.Remote = new Class({
     options = options || {};
     Object.append(options,this.options.remoteOptions);
     options.classPrefix = this.options.classPrefix;
+    options.globalClassName = this.options.globalClassName;
+    options.globalClassPrefix = this.options.globalClassPrefix;
     return new MooSelect.Results.Remote(options)
   },
 
