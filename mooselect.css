@@ -139,10 +139,8 @@
   -moz-border-bottom-left-radius:0;
   -webkit-border-bottom-left-radius:0;
   border-bottom:0;
-}
-
-.MooSelect-container.single.open .MooSelect-stage {
   background-color: #eee;
+  padding-bottom:6px;
   background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, white), color-stop(0.5, #eeeeee));
   background-image: -webkit-linear-gradient(center bottom, white 0%, #eeeeee 50%);
   background-image: -moz-linear-gradient(center bottom, white 0%, #eeeeee 50%);
