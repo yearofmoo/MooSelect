@@ -1235,11 +1235,10 @@ MooSelect.Searcher = new Class({
   onKeyMovement : function(event) {
     switch(event.key) {
       case 'alt':
-      case 'ctrl':
       case 'shift':
       case 'command':
       case 'control':
-      case 'cmd':
+      case 'meta':
         return; //these keys do nothing
       break;
 
