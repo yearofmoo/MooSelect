@@ -57,7 +57,7 @@ Locale.define('en-US','MooSelect',{
     noResults : 'No results found for %(SEARCH)',
     loading : 'Searching Please Wait...',
     minSearch : 'Please enter %(MIN) or more characters...',
-    otherResult : 'Press enter to create %(VALUE) as an option'
+    otherResult : 'Press enter to create &quot;%(VALUE)&quot; as an option'
   }
 
 });
