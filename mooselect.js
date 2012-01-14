@@ -220,9 +220,10 @@ MooSelect.implement({
   },
 
   onSpaceKeyInput : function(event) {
-    event.stop();
-    this.show();
-    this.focus();
+    if(this.isHidden()) {
+      event.stop();
+      this.show();
+    }
   },
 
   buildInner : function() {
@@ -304,6 +305,7 @@ MooSelect.implement({
       'backspace' : this.onBackspace.bind(this),
       'search' : this.filterResultsFromSearch.bind(this),
       'clear' : this.filterResultsFromSearch.bind(this),
+      'space' : this.onSpaceKeyInput.bind(this),
       'enter' : function() {
         if(this.isVisible()) {
           this.selectAndClose();
@@ -1232,6 +1234,15 @@ MooSelect.Searcher = new Class({
 
   onKeyMovement : function(event) {
     switch(event.key) {
+      case 'alt':
+      case 'ctrl':
+      case 'shift':
+      case 'command':
+      case 'control':
+      case 'cmd':
+        return; //these keys do nothing
+      break;
+
       case 'up':
         event.stop();
         this.fireEvent('up');
@@ -1263,6 +1274,10 @@ MooSelect.Searcher = new Class({
       break;
       default:
         this.onSearchInput();
+      break;
+      case 'space':
+        this.fireEvent('space',[event]);
+        return;
       break;
       case 'enter':
         event.stop();
