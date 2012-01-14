@@ -991,6 +991,10 @@ MooSelect.Stage = new Class({
     return this.getTotal() > 0;
   },
 
+  hasResult : function(value) {
+    return !! this.getResult(value);
+  },
+
   clear : function() {
     this.results = null;
   },
@@ -2013,7 +2017,6 @@ MooSelect.Remote = new Class({
 
   onMinSearch : function() {
     if(this.options.messages.minSearch && !this.getResults().hasResults()) {
-    document.title = Math.random() + 'min';
       var message = this.getMessage();
       var text = this.options.messages.minSearch;
       text = text.replace('%(MIN)',this.options.minSearchLength);
@@ -2043,7 +2046,17 @@ MooSelect.Remote = new Class({
     options.classPrefix = this.options.classPrefix;
     options.globalClassName = this.options.globalClassName;
     options.globalClassPrefix = this.options.globalClassPrefix;
-    return new MooSelect.Results.Remote(options)
+    var object = new MooSelect.Results.Remote(options);
+    object.performFinalSearchResultsFilter = this.filterResultsWithStageResults.bind(this);
+    return object;
+  },
+
+  filterResultsWithStageResults : function(results) {
+    var stage = this.getStage();
+    results = results.filter(function(result) {
+      return !stage.hasResult(result.value);
+    });
+    return results;
   },
 
   setSelectedInputValue : function(value) {
@@ -2216,11 +2229,16 @@ MooSelect.Results.Remote = new Class({
     return result;
   },
 
+  performFinalSearchResultsFilter : function(results) { //this method is meant to be overridden
+    return results;
+  },
+
   onRequestSuccess : function() {
     this.cacheResponse(this.getSearchText(),arguments);
 
     var results = this.handleResponse.apply(this,arguments) || [];
     results = results.map(this.sanitizeResult,this);
+    results = this.performFinalSearchResultsFilter(results);
 
     if(!this.options.mergeResults) {
       this.results = null;
