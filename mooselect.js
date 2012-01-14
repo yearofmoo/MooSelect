@@ -1079,7 +1079,7 @@ MooSelect.Stage = new Class({
         result.destroy();
         if(!this.hasResults()) {
           this.total = 0;
-          his.onNoResults();
+          this.onNoResults();
         }
         this.fireEvent('removeResult',[text,value]);
       }.bind(this);
