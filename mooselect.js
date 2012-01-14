@@ -67,7 +67,11 @@ MooSelect.implement({
   Implements : [Options, Events],
 
   options : {
+
+    //Element-Spefici
     zIndex : 1000,
+    performAutoTabIndexing : true,
+    tabIndex : null,
 
     //Class Related Prefixing
     className : 'container',
@@ -96,6 +100,8 @@ MooSelect.implement({
 
   initialize : function(element,options) {
     element = $(element);
+    element.store('MooSelect',this);
+
     this.input = element;
     this.multiple = this.input.get('multiple');
     if(this.isMultiple()) {
@@ -106,18 +112,23 @@ MooSelect.implement({
       }
     }
     options = options || {};
+    var messages = options.messages;
+    delete options.messages;
+    this.setOptions(options);
+
     if(options.tabIndex==null) {
       options.tabIndex = element.get('tabindex');
-      if(options.tabIndex == null) {
+      if(options.tabIndex == null && this.options.performAutoTabIndexing) {
         var form = options.form || element.getParent('form');
         if(form) {
           options.tabIndex = MooSelect.getNextTabIndex(form);
         }
       }
+
+      this.options.tabIndex = options.tabIndex;
     }
-    var messages = options.messages;
-    delete options.messages;
-    this.setOptions(options);
+
+
     if(messages) {
       Object.append(this.options.messages,messages);
     }
@@ -823,6 +834,7 @@ MooSelect.implement({
   },
 
   destroy : function() {
+    this.getInput().eliminate('MooSelect');
     this.getMessage().destroy();
     this.getResults().destroy();
     this.getSearcher().destroy();
@@ -1262,6 +1274,8 @@ MooSelect.Searcher = new Class({
     switch(event.key) {
       case 'alt':
       case 'shift':
+      case 'ctrl':
+      case 'cmd':
       case 'command':
       case 'control':
       case 'meta':
