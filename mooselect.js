@@ -1984,7 +1984,10 @@ MooSelect.Results = new Class({
   },
 
   selectFirst : function() {
-    this.getResult(0).select();
+    var result = this.getResult(0)
+    if(result) {
+      result.select();
+    }
   },
 
   scrollToSelected : function(result) {
