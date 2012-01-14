@@ -1763,7 +1763,9 @@ MooSelect.Results = new Class({
   },
 
   getTotalResults : function() {
-    return this.getResults().length;
+    return this.getResults().filter(function(result) {
+      return result.isVisible();
+    }).length;
   },
 
   getElements : function() {
@@ -2018,6 +2020,10 @@ MooSelect.Remote = new Class({
   },
 
   onResponse : function() {
+    this.hideMessage();
+  },
+
+  hideMessage : function() {
     this.getMessage().hide();
   },
 
@@ -2049,6 +2055,7 @@ MooSelect.Remote = new Class({
     this.getResults().addEvents({
       'loading':this.onLoading.bind(this),
       'requestComplete':this.onResponse.bind(this),
+      'results':this.hideMessage.bind(this),
       'minSearch':this.onMinSearch.bind(this)
     });
   },
@@ -2267,6 +2274,9 @@ MooSelect.Results.Remote = new Class({
       }
       if(this.options.filterResults) {
         this._filter(this.getSearchText());
+      }
+      if(this.getTotalResults() > 0) {
+        this.fireEvent('results');
       }
       this.hoverFirstResult();
       this.fireEvent('requestSuccess',[results,arguments]);
