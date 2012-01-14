@@ -2021,7 +2021,6 @@ MooSelect.Results = new Class({
 
   destroy : function() {
     this.getContainer().destroy();
-    this.container = null;
   }
 
 });
