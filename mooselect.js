@@ -25,8 +25,8 @@ provides:
 var MooSelect;
 
 (function($,$$) {
-MooSelect = new Class;
 
+MooSelect = new Class;
 MooSelect.extend({
 
   getNextTabIndex : function(form) {
@@ -51,29 +51,46 @@ MooSelect.extend({
 
 });
 
+Locale.define('en-US','MooSelect',{
+
+  messages : {
+    noResults : 'No results found for %(SEARCH)',
+    loading : 'Searching Please Wait...',
+    minSearch : 'Please enter %(MIN) or more characters...',
+    otherResult : 'Press enter to create %(VALUE) as an option'
+  }
+
+});
+
 MooSelect.implement({
 
   Implements : [Options, Events],
 
   options : {
     zIndex : 1000,
-    selectFirstOnDefault : true,
+
+    //Class Related Prefixing
     className : 'container',
     classPrefix : 'MooSelect-',
     globalClassName : null,
     globalClassPrefix : null,
+
+    //Results-Related Options
+    selectFirstOnDefault : true,
     allowOtherResult : false,
-    animations : true,
-    fireSelectEvents : true,
-
     allowDeselectSingle : false,
-    disableSearcher : false,
-
     customBuildResultHTML : null,
     customBuildStageResultHTML : null,
 
+    //Whether to animate the addition of results
+    animations : true,
+    fireSelectEvents : true,
+    disableSearcher : false,
+
+    //Message Locales
     messages : {
-      noResults : 'No results found for %(SEARCH)'
+      noResults : Locale.get('MooSelect.messages.noResults'),
+      otherResult : Locale.get('MooSelect.messages.otherResult')
     }
   },
 
@@ -771,14 +788,24 @@ MooSelect.implement({
 
   onEmpty : function() {
     var search = this.getSearcher().getValue();
-    var message = this.getMessage();
-    var text = this.options.messages.noResults;
-    text = text.replace('%(SEARCH)',search);
-    message.setType('empty');
-    message.setText(text);
-    message.show();
-    this.getResults().hide();
-    this.fireEvent('noResults');
+    if(this.options.allowOtherResult) {
+      var message = this.getMessage();
+      message.setType('other-result');
+      text = this.options.messages.otherResult;
+      text = text.replace('%(VALUE)','<strong>'+search+'</strong>');
+      message.setText(text);
+      message.show();
+    }
+    else {
+      var message = this.getMessage();
+      var text = this.options.messages.noResults;
+      text = text.replace('%(SEARCH)',search);
+      message.setType('empty');
+      message.setText(text);
+      message.show();
+      this.getResults().hide();
+      this.fireEvent('noResults');
+    }
   },
 
   onEmptyBackspace : function() {
@@ -1994,8 +2021,8 @@ MooSelect.Remote = new Class({
     minSearchLength : 3,
 
     messages : {
-      loading : 'Loading...',
-      minSearch : 'Please enter %(MIN) or more characters...'
+      loading : Locale.get('MooSelect.messages.loading'),
+      minSearch : Locale.get('MooSelect.messages.minSearch')
     }
   },
 

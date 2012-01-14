@@ -299,6 +299,15 @@
   color:#999;
 }
 
+.MooSelect-message-other-result {
+  color:gray;
+}
+
+.MooSelect-message-other-result strong {
+  color:black;
+  font-weight:bold;
+}
+
 .MooSelect-container.validation-failed .MooSelect-stage {
   color:red;
   background:pink;
