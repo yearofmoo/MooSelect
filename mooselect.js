@@ -2012,10 +2012,11 @@ MooSelect.Remote = new Class({
   },
 
   onMinSearch : function() {
-    if(this.options.minSearchMessage && !this.getResults().hasResults()) {
+    if(this.options.messages.minSearch && !this.getResults().hasResults()) {
+    document.title = Math.random() + 'min';
       var message = this.getMessage();
       var text = this.options.messages.minSearch;
-      text = tex.replace('%(MIN)',this.options.minSearchLength);
+      text = text.replace('%(MIN)',this.options.minSearchLength);
       message.setType('min');
       message.setText(text);
       message.show();
@@ -2031,7 +2032,7 @@ MooSelect.Remote = new Class({
     this.parent();
     this.getResults().addEvents({
       'loading':this.onLoading.bind(this),
-      'response':this.onResponse.bind(this),
+      'requestComplete':this.onResponse.bind(this),
       'minSearch':this.onMinSearch.bind(this)
     });
   },
