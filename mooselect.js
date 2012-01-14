@@ -57,7 +57,7 @@ MooSelect.implement({
 
   options : {
     zIndex : 1000,
-    selectFirstOnDefault : false,
+    selectFirstOnDefault : true,
     className : 'container',
     classPrefix : 'MooSelect-',
     globalClassName : null,
@@ -65,7 +65,6 @@ MooSelect.implement({
     allowOtherResult : false,
     animations : true,
     fireSelectEvents : true,
-    hideOriginalInputHorizontally : true,
 
     allowDeselectSingle : false,
     disableSearcher : false,
