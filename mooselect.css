@@ -81,6 +81,7 @@
   line-height:100%;
   border:0;
   font-size:80%;
+  background:transparent;
 }
 
 .MooSelect-searcher input:focus {
