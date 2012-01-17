@@ -190,6 +190,7 @@ MooSelect.implement({
       results = results.append(this.buildOptions(options));
     }
 
+
     this.getResults().setResults(results);
 
     if(this.options.selectFirstOnDefault && !this.hasSelectedValue()) {
@@ -226,7 +227,10 @@ MooSelect.implement({
 
   isOptionSelected : function(option) {
     if(typeOf(option) == 'element') {
-      return option.selectedIndex > 0 || option.getAttribute('selected') != null;
+      if(Browser.ie && Browser.version < 9) {
+        return !! option.selected;
+      }
+      return option.getAttribute('selected') != null;
     }
     else {
       return option.selected;
@@ -1392,8 +1396,8 @@ MooSelect.Searcher = new Class({
     this.fireEvent('blur');
   },
 
-  onClick : function() {
-    event.stopPropagation();
+  onClick : function(event) {
+    if(event) event.stopPropagation();
     if(this.hasFocus()) {
       this.onFocus();
     }

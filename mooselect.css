@@ -198,7 +198,6 @@
   border:0;
   padding:0;
   margin-top:-1px;
-  background:none;
 }
 
 .MooSelect-container.hover,
@@ -218,17 +217,6 @@
 
 .MooSelect-container.multiple .MooSelect-searcher,
 .MooSelect-container.multiple .MooSelect-stage-result {
-  -webkit-border-radius: 3px;
-  -moz-border-radius   : 3px;
-  border-radius        : 3px;
-  background-color: #e4e4e4;
-  background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #e4e4e4), color-stop(0.7, #eeeeee));
-  background-image: -webkit-linear-gradient(center bottom, #e4e4e4 0%, #eeeeee 70%);
-  background-image: -moz-linear-gradient(center bottom, #e4e4e4 0%, #eeeeee 70%);
-  background-image: -o-linear-gradient(bottom, #e4e4e4 0%, #eeeeee 70%);
-  background-image: -ms-linear-gradient(top, #e4e4e4 0%,#eeeeee 70%);
-  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e4e4e4', endColorstr='#eeeeee',GradientType=0 );
-  background-image: linear-gradient(top, #e4e4e4 0%,#eeeeee 70%);
   color: #333;
   border: 1px solid #b4b4b4;
   line-height: 13px;
@@ -239,7 +227,7 @@
 
 .MooSelect-container.multiple .MooSelect-searcher {
   border:0;
-  background:none;
+  background:transparent;
 }
 
 .MooSelect-searcher.disabled {
@@ -253,13 +241,25 @@
   margin-top:-25px;
 }
 
-.MooSelect-container.multiple .MooSelect-stage-result {
+.MooSelect-container.multiple .MooSelect-stage-result,
+.MooSelect-searcher.single.disabled + .MooSelect-results {
   position:relative;
   padding-right:20px;
+  background-color: #e4e4e4;
   box-shadow:0 0 3px #ddd;
   -o-box-shadow:0 0 3px #ddd;
   -moz-box-shadow:0 0 3px #ddd;
   -webkit-box-shadow:0 0 3px #ddd;
+  -webkit-border-radius: 3px;
+  -moz-border-radius   : 3px;
+  border-radius        : 3px;
+  background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #e4e4e4), color-stop(0.7, #eeeeee));
+  background-image: -webkit-linear-gradient(center bottom, #e4e4e4 0%, #eeeeee 70%);
+  background-image: -moz-linear-gradient(center bottom, #e4e4e4 0%, #eeeeee 70%);
+  background-image: -o-linear-gradient(bottom, #e4e4e4 0%, #eeeeee 70%);
+  background-image: -ms-linear-gradient(top, #e4e4e4 0%,#eeeeee 70%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e4e4e4', endColorstr='#eeeeee',GradientType=0 );
+  background-image: linear-gradient(top, #e4e4e4 0%,#eeeeee 70%);
 }
 
 .MooSelect-container .MooSelect-stage-result .MooSelect-x {
