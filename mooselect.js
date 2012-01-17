@@ -1807,10 +1807,14 @@ MooSelect.Results = new Class({
     return this.getTotalResults() > 0;
   },
 
-  getTotalResults : function() {
+  getTotalVisibleResults : function() {
     return this.getResults().filter(function(result) {
       return result.isVisible();
     }).length;
+  },
+
+  getTotalResults : function() {
+    return this.getResults().length;
   },
 
   getElements : function() {
