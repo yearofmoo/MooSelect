@@ -498,7 +498,7 @@ MooSelect.implement({
       this.hover();
     }
     else {
-      this.show();
+      this.focus();
     }
   },
 
