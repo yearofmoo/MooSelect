@@ -1732,7 +1732,6 @@ MooSelect.Results = new Class({
       'customBuildResultHTML' : this.options.customBuildResultHTML ? this.options.customBuildResultHTML : null,
       'classPrefix' : this.options.classPrefix,
       'onHover' : this.onHover.bind(this),
-      'onBlur' : this.onBlur.bind(this),
       'onSelect' : this.onSelect.bind(this),
       'onClick' : function() {
         this.fireEvent('click');
@@ -1929,9 +1928,6 @@ MooSelect.Results = new Class({
       this.blurAll(result);
       this.scrollToHoverResult(result);
     }
-  },
-
-  onBlur : function(result) {
   },
 
   deSelectAll : function(skip) {
