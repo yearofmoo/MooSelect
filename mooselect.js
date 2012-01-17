@@ -1736,6 +1736,7 @@ MooSelect.Results = new Class({
       'customBuildResultHTML' : this.options.customBuildResultHTML ? this.options.customBuildResultHTML : null,
       'classPrefix' : this.options.classPrefix,
       'onHover' : this.onHover.bind(this),
+      'onBlur' : this.onBlur.bind(this),
       'onSelect' : this.onSelect.bind(this),
       'onClick' : function() {
         this.fireEvent('click');
@@ -1926,6 +1927,10 @@ MooSelect.Results = new Class({
     }
   },
 
+  onBlur : function(result) {
+
+  },
+
   onHover : function(result) {
     var index = $(result).retrieve('index');
     if(index != this.getHoverIndex()) {
@@ -2114,11 +2119,29 @@ MooSelect.Remote = new Class({
     return object;
   },
 
-  filterResultsWithStageResults : function(results) {
+  filterResultsWithStageResults : function(values) {
     var stage = this.getStage();
-    results = results.filter(function(result) {
-      return !stage.hasResult(result.value);
+
+    var results = [];
+    values.each(function(value) {
+      if(value.group) {
+        var group = Object.clone(value);
+        group.results = [];
+        for(var i=0;i<value.results.length;i++) {
+          var v = value.results[i];
+          if(!stage.hasResult(v.value)) {
+            group.results.push(v);
+          }
+        }
+        if(group.results.length > 0) {
+          results.push(group);
+        }
+      }
+      else if(!stage.hasResult(value.value)) {
+        results.push(value);
+      }
     });
+
     return results;
   },
 
