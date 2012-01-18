@@ -263,7 +263,9 @@ MooSelect.implement({
     this.inner = new Element('div',{
       'class':klass,
       'styles':{
-        'position':'absolute'   
+        'position':'absolute',
+        'top':-9999,
+        'left':-9999
       }
     }).inject(document.body);
     this.setZIndex(this.options.zIndex);
