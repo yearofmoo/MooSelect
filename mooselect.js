@@ -22,7 +22,7 @@ provides:
 - MooSelect.Remote
 
 */
-var MooSelect;
+var MooSelect, $mooselect;
 
 (function($,$$) {
 
@@ -41,15 +41,52 @@ MooSelect.extend({
   },
 
   hideAllOthers : function(mooselect) {
-    $$('.MooSelectElement').each(function(moo) {
-      moo = moo.retrieve('MooSelect');
+    Object.each(this.getInstances(),function(moo) {
       if(moo!=mooselect) {
         moo.hide();
       }
     });
+  },
+
+  addInstance : function(moo) {
+    if(!this.instances) {
+      this.instances = {};
+    }
+    this.instances[moo.getID()]=moo;
+  },
+
+  removeInstance : function(moo) {
+    var id = moo.getID();
+    var instances = this.getInstances();
+    if(instances[id]) {
+      delete instances[id];
+    }
+  },
+
+  getInstances : function() {
+    return this.instances;
+  },
+
+  getInstance : function(id) {
+    return this.getInstances()[id];
   }
 
 });
+
+$mooselect = function(key) {
+  switch(typeOf(key)) {
+    case 'object':
+      if(instanceOf(key,MooSelect)) {
+        return key;
+      }
+
+    case 'element':
+      return key.retrieve('MooSelect');
+
+    case 'string':
+      return MooSelect.getInstance(key);
+  }
+}
 
 Locale.define('en-US','MooSelect',{
 
@@ -133,6 +170,8 @@ MooSelect.implement({
       Object.append(this.options.messages,messages);
     }
 
+    MooSelect.addInstance(this);
+
     this.build();
     this.populate();
     this.hide();
@@ -171,6 +210,16 @@ MooSelect.implement({
     }
     this.container.inject(this.getInput(),'after');
     this.container.store('MooSelect',this);
+  },
+
+  getID : function() {
+    if(!this.id) {
+      this.id = this.getInput().get('id');
+      if(!this.id) {
+        this.id = 'MooSelect-Instance-' + Math.random();
+      }
+    }
+    return this.id;
   },
 
   populate : function(input) {
@@ -840,6 +889,7 @@ MooSelect.implement({
   },
 
   destroy : function() {
+    MooSelect.removeInstance(this);
     this.getInput().eliminate('MooSelect');
     this.getMessage().destroy();
     this.getResults().destroy();
