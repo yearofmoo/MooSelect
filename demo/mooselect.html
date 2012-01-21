@@ -1,0 +1,435 @@
+<!DOCTYPE html> 
+<html lang="en"> 
+<head> 
+<title>TITLE</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /> 
+<link rel="stylesheet" type="text/css" href="./reset.css" /> 
+<link rel="stylesheet" type="text/css" href="./MooTools-Formular/formular.css" /> 
+<link rel="stylesheet" type="text/css" href="../mooselect.css" /> 
+<style type="text/css">
+body {
+  font-family:helvetica;
+  font-size:15px;
+}
+body:after {
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  bottom:0;
+  content:"";
+  background:url(./loading.gif) no-repeat center center;
+  z-index:1;
+}
+select {
+  width:400px;
+}
+.MooSelect-container {
+  margin-top:20px;
+}
+#wrapper {
+  position:relative;
+  z-index:2;
+  margin:0 auto;
+  width:1000px;
+  background:white;
+  padding-bottom:300px;
+}
+.group {
+  border-top:2px solid maroon;
+  padding:30px 10px;
+  clear:both;
+  background:-webkit-gradient(linear,left top,left bottom,from(#eee),color-stop(0.1,white),to(#fff));
+}
+.col {
+  width:480px;
+  float:left;
+  padding-bottom:2em;
+}
+header h2 {
+  font-size:30px;
+  margin-top:20px;
+  margin-bottom:30px;
+}
+h3 {
+  font-size:25px;
+  color:maroon;
+  margin-bottom:10px;
+}
+#wrapper > .group:first-child {
+  border:0;
+  background:none;
+}
+.description {
+  margin-top:2em;
+  color:#999;
+}
+#wrapper {
+  opacity:0;
+}
+</style>
+</head> 
+
+<body id="" class=""> 
+  <div id="wrapper">
+    <div class="group">
+      <header>
+        <h2>Basic Select Box Replacement</h2>
+      </header>
+      <div class="col">
+        <h3>Single Select</h3>
+        <p>Select the colour of your car</p>
+        <select id="basic-single">
+          <option>black</option>
+          <option>grey</option>
+          <option>brown</option>
+          <option>red</option>
+          <option>orange</option>
+          <option>yellow</option>
+          <option>green</option>
+          <option>purple</option>
+          <option>blue</option>
+        </select>
+      </div>
+      <div class="col">
+        <h3>Multiple Select</h3>
+        <p>Select your favourite colours</p>
+        <select id="basic-multiple" multiple="multiple">
+          <option>black</option>
+          <option>grey</option>
+          <option>brown</option>
+          <option>red</option>
+          <option>orange</option>
+          <option>yellow</option>
+          <option>green</option>
+          <option>purple</option>
+          <option>blue</option>
+        </select>
+      </div>
+    </div>
+    <div class="group">
+      <header>
+        <h2>Advanced, AutoComplete (Ajax Style) Select Boxes</h2>
+      </header>
+      <div class="col">
+        <h3>Single Select (AJAX)</h3>
+        <p>Enter your Country of Birth</p>
+        <select id="advanced-single">
+        </select>
+        <p class="description">This will download from GET ./single-advanced.php</p>
+      </div>
+      <div class="col">
+        <h3>Multiple Select</h3>
+        <p>Enter the countries you have visited</p>
+        <select id="advanced-multiple" multiple="multiple">
+        </select>
+      </div>
+    </div>
+    <div class="group">
+      <header>
+        <h2>Placeholders &amp; Grouped Results</h2>
+      </header>
+      <div class="col">
+        <h3>Single Select</h3>
+        <select id="extra-single" placeholder="Choose your favourite large scale, server-side coded website">
+          <optgroup label="Rails">
+            <option>Basecamp</option>
+            <option>Backpack</option>
+            <option>43things</option>
+            <option>Shopify</option>
+            <option>Yellow Pages</option>
+            <option>GitHub</option>
+            <option>A optionst Apart</option>
+          </optgroup>
+          <optgroup label="PHP">
+            <option>Instructables</option>
+            <option>SuTree</option>
+            <option>TrickLife</option>
+            <option>VideoJug</option>
+            <option>Expert Village</option>
+            <option>eHow</option>
+            <option>Household Hacker</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="col">
+        <h3>Multiple Select (AJAX with Optgroup)</h3>
+        <select id="extra-multiple" multiple="multiple" placeholder="Choose your top favourite grossing movies">
+        </select>
+      </div>
+    </div>
+    <div class="group">
+      <header>
+        <h2>Dynamically Created Options</h2>
+      </header>
+      <div class="col">
+        <h3>Single Select</h3>
+        <p>Enter your favourite fruit. If you find that a fruit does not exist in the list, then type it into the searcher bar and press enter.</p>
+        <select id="dynamic-options-1" placeholder="Select your favourite fruit">
+					<option>Apples</option>
+					<option>Bananas</option>
+					<option>Tomatoes</option>
+					<option>Oranges</option>
+        </select>
+      </div>
+      <div class="col">
+        <h3>Multiple Select</h3>
+        <p>Enter your favourite vegetables. If you find that a vegetable does not exist in the list, then type it into the searcher bar and press enter.</p>
+        <select id="dynamic-options-2" multiple="multiple" placeholder="Select your favourite vegetables">
+					<option>Broccoli</option>
+					<option>Carrots</option>
+					<option>Cucumbers</option>
+					<option>Spinach</option>
+        </select>
+      </div>
+    </div>
+    <form method="get" action="#" class="group" class="formular" id="form-validate">
+      <header>
+        <h2>Validations using Form.Validator + Formular</h2>
+      </header>
+      <div class="col">
+        <h3>Single Select</h3>
+        <select id="validation-single" placeholder="Choose your best language" class="required">
+					<option>Acholi</option>
+					<option>Afrikaans</option>
+					<option>Akan</option>
+					<option>Albanian</option>
+					<option>American Sign Language</option>
+					<option>Amharic</option>
+					<option>Arabic</option>
+					<option>Armenian</option>
+					<option>Assyrian</option>
+					<option>Azerbaijani</option>
+					<option>Azeri</option>
+					<option>Bajuni</option>
+					<option>Bambara</option>
+					<option>Basque</option>
+					<option>Behdini</option>
+					<option>Belorussian</option>
+					<option>Bengali</option>
+					<option>Berber</option>
+					<option>Bosnian</option>
+					<option>Bravanese</option>
+					<option>Bulgarian</option>
+					<option>Burmese</option>
+					<option>Cantonese</option>
+					<option>Catalan</option>
+					<option>Chaldean</option>
+					<option>Chaochow</option>
+					<option>Chamorro</option>
+					<option>Chavacano</option>
+					<option>Cherokee</option>
+					<option>Chuukese</option>
+					<option>Croatian</option>
+					<option>Czech</option>
+					<option>Dakota</option>
+					<option>Danish</option>
+					<option>Dari</option>
+					<option>Dinka</option>
+					<option>Diula</option>
+					<option>Dutch</option>
+					<option>Ewe</option>
+					<option>Farsi</option>
+					<option>Fijian Hindi</option>
+					<option>Finnish</option>
+					<option>Flemish</option>
+					<option>French</option>
+					<option>French Canadian</option>
+					<option>Fukienese</option>
+					<option>Fula</option>
+					<option>Fulani</option>
+					<option>Fuzhou</option>
+					<option>Gaddang</option>
+					<option>Georgian</option>
+					<option>German</option>
+					<option>Gorani</option>
+					<option>Greek</option>
+					<option>Gujarati</option>
+					<option>Haitian Creole</option>
+					<option>Hakka</option>
+					<option>Hakka - China</option>
+					<option>Hausa</option>
+					<option>Hebrew</option>
+					<option>Hindi</option>
+					<option>Hmong</option>
+					<option>Hunanese</option>
+					<option>Hungarian</option>
+					<option>Ibanag</option>
+					<option>Ibo/Igbo</option>
+					<option>Icelandic</option>
+					<option>Ilocano</option>
+					<option>Indonesian</option>
+					<option>Italian</option>
+					<option>Jakartanese</option>
+					<option>Japanese</option>
+					<option>Javanese</option>
+					<option>Karen</option>
+					<option>Kashmiri</option>
+					<option>Kazakh</option>
+					<option>Khmer (Cambodian)</option>
+					<option>Kinyarwanda</option>
+					<option>Kirghiz</option>
+					<option>Kirundi</option>
+					<option>Korean</option>
+					<option>Kosovan</option>
+					<option>Krio</option>
+					<option>Kurdish</option>
+					<option>Kurmanji</option>
+					<option>Lakota</option>
+					<option>Laotian</option>
+					<option>Latvian</option>
+					<option>Lingala</option>
+					<option>Lithuanian</option>
+					<option>Luganda</option>
+					<option>Luxembourgeois</option>
+					<option>Maay</option>
+					<option>Macedonian</option>
+					<option>Malagasy</option>
+					<option>Malay</option>
+					<option>Malayalam</option>
+					<option>Maltese</option>
+					<option>Mandarin</option>
+					<option>Mandingo</option>
+					<option>Mandinka</option>
+					<option>Maninka</option>
+					<option>Mankon</option>
+					<option>Marathi</option>
+					<option>Marshallese</option>
+					<option>Mien</option>
+					<option>Mina</option>
+					<option>Mirpuri</option>
+					<option>Mixteco</option>
+					<option>Moldavan</option>
+					<option>Mongolian</option>
+					<option>Montenegrin</option>
+					<option>Navajo</option>
+					<option>Neapolitan</option>
+					<option>Nepali</option>
+					<option>Nigerian Pidgin English</option>
+					<option>Norwegian</option>
+					<option>Nuer</option>
+					<option>Oromo</option>
+					<option>Pahari</option>
+					<option>Pampangan</option>
+					<option>Pamgasinan</option>
+					<option>Pashto</option>
+					<option>Patois</option>
+					<option>Pidgin English</option>
+					<option>Polish</option>
+					<option>Portuguese</option>
+					<option>Portuguese Creole</option>
+					<option>Punjabi</option>
+					<option>Romanian</option>
+					<option>Russian</option>
+					<option>Samoan</option>
+					<option>Serbian</option>
+					<option>Shanghainese</option>
+					<option>Shona</option>
+					<option>Sicilian</option>
+					<option>Sinhalese</option>
+					<option>Sindhi</option>
+					<option>Slovak</option>
+					<option>Slovenian</option>
+					<option>Somali</option>
+					<option>Sorani</option>
+					<option>Spanish</option>
+					<option>Sudanese Arabic</option>
+					<option>Swahili</option>
+					<option>Swedish</option>
+					<option>Sylhetti</option>
+					<option>Tagalog</option>
+					<option>Taiwanese</option>
+					<option>Tajik</option>
+					<option>Tamil</option>
+					<option>Telugu</option>
+					<option>Thai</option>
+					<option>Tibetan</option>
+					<option>Tigre</option>
+					<option>Tigrinya</option>
+					<option>Toishanese</option>
+					<option>Tongan</option>
+					<option>Tshiluba</option>
+					<option>Turkish</option>
+					<option>Twi</option>
+					<option>Ukrainian</option>
+					<option>Urdu</option>
+					<option>Uzbek</option>
+					<option>Vietnamese</option>
+					<option>Visayan</option>
+					<option>Welsh</option>
+					<option>Wolof</option>
+					<option>Yiddish</option>
+					<option>Yoruba</option>
+					<option>Yupik</option>
+        </select>
+      </div>
+      <div class="col">
+        <h3>Multiple Select (AJAX with Preloaded Search)</h3>
+        <select id="validation-multiple" multiple="multiple" placeholder="Select your favourite arnold movie" class="required">
+        </select>
+      </div>
+      <input type="submit" class="button" />
+    </form>
+    <div class="group">
+      <header>
+        <h2>Links</h2>
+      </header>
+      <a href="/mooselect">Back to MooSelect<a>
+    </div>
+  </div>
+<script type="text/javascript" src="./core.js"></script>
+<script type="text/javascript" src="./more.js"></script>
+<script type="text/javascript" src="../mooselect.js?123"></script>
+<script type="text/javascript" src="./MooTools-Formular/formular.js"></script>
+<script type="text/javascript">
+window.addEvent('domready',function() {
+
+    // Basic Stuff
+    new MooSelect('basic-single');
+    new MooSelect('basic-multiple');
+
+    // Advanced
+    new MooSelect.Remote('advanced-single',{
+      'url' : './single-advanced.php'
+    });
+    new MooSelect.Remote('advanced-multiple',{
+      'url' : './single-advanced.php'
+    });
+
+    //Extras
+    new MooSelect('extra-single',{
+      'skipSelected' : true      
+    });
+    new MooSelect.Remote('extra-multiple',{ 
+      'url' : './extra-advanced.php'
+    });
+
+    //Dynamics
+    new MooSelect('dynamic-options-1',{ 
+      allowOtherResult : true
+    });
+    new MooSelect('dynamic-options-2',{ 
+      allowOtherResult : true
+    });
+
+    new MooSelect('validation-single',{
+      'skipSelected' : true      
+    });
+    new MooSelect.Remote('validation-multiple',{
+      'skipSelected' : true,
+      'url' : './validate-multiple.php',
+      'remoteOptions' : {
+        'preloadSearch' : '',
+      }
+    });
+
+    var form = $('form-validate');
+    new Formular(form,{
+      validateFieldsOnBlur : false
+    });
+
+    $('wrapper').fade('in');
+});
+</script>
+</body>
+</html> 
