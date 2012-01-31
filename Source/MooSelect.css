@@ -67,7 +67,7 @@
 
 .MooSelect-container.multiple.open .MooSelect-search-icon,
 .MooSelect-inner.single.open .MooSelect-searcher .MooSelect-search-icon {
-  background:url('sprite.png') no-repeat -38px -20px;
+  background:url('MooSelect-Sprite.png') no-repeat -38px -20px;
   width:20px;
   height:20px;
   position:absolute;
@@ -179,7 +179,7 @@
   display: block;
   height: 100%;
   width: 18px;
-  background: url('sprite.png') no-repeat 0 1px;
+  background: url('MooSelect-Sprite.png') no-repeat 0 1px;
 }
 
 .MooSelect-container.open .MooSelect-arrow {
@@ -271,7 +271,7 @@
   width: 12px;
   height: 8px;
   font-size: 1px;
-  background: url(sprite.png) right top no-repeat;
+  background: url(MooSelect-Sprite.png) right top no-repeat;
 }
 
 .MooSelect-container.multiple .MooSelect-stage-result .MooSelect-x:hover {

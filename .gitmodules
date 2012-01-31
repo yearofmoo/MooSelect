@@ -1,0 +1,6 @@
+[submodule "Test/JazzMint"]
+	path = Test/JazzMint
+	url = git://github.com/matsko/JazzMint.git
+[submodule "Test/Assets/MooTools-Formular"]
+	path = Test/Assets/MooTools-Formular
+	url = git://github.com/matsko/MooTools-Formular.git
