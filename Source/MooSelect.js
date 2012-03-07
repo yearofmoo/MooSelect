@@ -239,7 +239,6 @@ MooSelect.implement({
       results = results.append(this.buildOptions(options));
     }
 
-
     this.getResults().setResults(results);
 
     if(this.options.selectFirstOnDefault && !this.hasSelectedValue()) {
