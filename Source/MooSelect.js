@@ -242,15 +242,15 @@ MooSelect.implement({
       results = results.append(this.buildOptions(options));
     }
 
+    this.getResults().setResults(results);
+
     //just in case it wasn't picked up
     if(selected >= 0 && !this.hasSelectedValue()) {
-      var option = input.getElements('option')[selected];
-      if(option) {
-        option.selected = true;
+      var result = this.getResults().getResult(selected);
+      if(result) {
+        result.select();
       }
     }
-
-    this.getResults().setResults(results);
 
     if(!this.isMultiple() && this.options.selectFirstOnDefault && !this.hasSelectedValue()) {
       this.getResults().selectFirst();
