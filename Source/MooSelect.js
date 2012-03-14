@@ -224,8 +224,11 @@ MooSelect.implement({
 
   populate : function(input) {
     input = input || this.getInput();
+    var options = input.options; 
     var items = input.getElements('> *');
     var groups = [], options = [];
+    var selected = input.selectedIndex ? input.selectedIndex : input.options.selectedIndex;
+
     items.each(function(item) {
       var array = item.get('tag') == 'optgroup' ? groups : options;
       array.push(item);
@@ -241,7 +244,15 @@ MooSelect.implement({
 
     this.getResults().setResults(results);
 
-    if(this.options.selectFirstOnDefault && !this.hasSelectedValue()) {
+    //just in case it wasn't picked up
+    if(selected >= 0 && !this.hasSelectedValue()) {
+      var option = input.getElements('option')[selected];
+      if(option) {
+        option.selected = true;
+      }
+    }
+
+    if(!this.isMultiple() && this.options.selectFirstOnDefault && !this.hasSelectedValue()) {
       this.getResults().selectFirst();
     }
 
@@ -274,15 +285,7 @@ MooSelect.implement({
   },
 
   isOptionSelected : function(option) {
-    if(typeOf(option) == 'element') {
-      if(Browser.ie && Browser.version < 9) {
-        return !! option.selected;
-      }
-      return option.getAttribute('selected') != null;
-    }
-    else {
-      return option.selected;
-    }
+    return option.selected;
   },
 
   setupEvents : function() {
