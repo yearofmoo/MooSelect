@@ -16,7 +16,7 @@ src:
 
 jsmin:
   filters:
-    - cat Source/xef.js | jsmin > %{output}
+    - cat Source/MooSelect.js | jsmin > %{output}
   input:
     - Source/MooSelect.js
   output:
