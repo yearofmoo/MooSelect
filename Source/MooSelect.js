@@ -24,7 +24,7 @@ provides:
 */
 var MooSelect, $mooselect;
 
-(function($,$$) {
+(function($) {
 
 MooSelect = new Class;
 MooSelect.extend({
@@ -87,17 +87,6 @@ $mooselect = function(key) {
       return MooSelect.getInstance(key);
   }
 }
-
-Locale.define('en-US','MooSelect',{
-
-  messages : {
-    noResults : 'No results found for %(SEARCH)',
-    loading : 'Searching Please Wait...',
-    minSearch : 'Please enter %(MIN) or more characters...',
-    otherResult : 'Press enter to create &quot;%(VALUE)&quot; as an option'
-  }
-
-});
 
 MooSelect.implement({
 
@@ -910,6 +899,19 @@ MooSelect.implement({
 
 });
 
+})(document.id);
+Locale.define('en-US','MooSelect',{
+
+  messages : {
+    noResults : 'No results found for %(SEARCH)',
+    loading : 'Searching Please Wait...',
+    minSearch : 'Please enter %(MIN) or more characters...',
+    otherResult : 'Press enter to create &quot;%(VALUE)&quot; as an option'
+  }
+
+});
+(function($) {
+
 MooSelect.Message = new Class({
 
   Implements : [Options, Events],
@@ -958,6 +960,9 @@ MooSelect.Message = new Class({
   }
 
 });
+
+})(document.id);
+(function($) {
 
 MooSelect.Stage = new Class({
 
@@ -1277,6 +1282,9 @@ MooSelect.Stage = new Class({
 
 });
 
+})(document.id);
+(function($) {
+
 MooSelect.Searcher = new Class({
 
   Implements : [Options, Events],
@@ -1491,6 +1499,9 @@ MooSelect.Searcher = new Class({
 
 });
 
+})(document.id);
+(function($) {
+
 MooSelect.Result = new Class({
 
   Implements : [Options, Events],
@@ -1659,6 +1670,9 @@ MooSelect.Result = new Class({
   }
 
 });
+
+})(document.id);
+(function($) {
 
 MooSelect.Results = new Class({
 
@@ -2088,6 +2102,9 @@ MooSelect.Results = new Class({
 
 });
 
+})(document.id);
+(function($) {
+
 MooSelect.Remote = new Class({
 
   Extends : MooSelect,
@@ -2214,6 +2231,9 @@ MooSelect.Remote = new Class({
   }
 
 });
+
+})(document.id);
+(function($) {
 
 MooSelect.Results.Remote = new Class({
 
@@ -2409,6 +2429,9 @@ MooSelect.Results.Remote = new Class({
 
 });
 
+})(document.id);
+(function($) {
+
 if(Form && Form.Validator && Form.Validator.add) {
 
   Form.Validator.add('validate-mooselect',{
@@ -2466,4 +2489,4 @@ if(Form && Form.Validator && Form.Validator.add) {
 
 }
 
-})(document.id,$$);
+})(document.id);

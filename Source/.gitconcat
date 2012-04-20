@@ -1,0 +1,22 @@
+src:
+  input:
+    - Source/files/MooSelect.Base.js
+    - Source/files/MooSelect.Locale.js
+    - Source/files/MooSelect.Message.js
+    - Source/files/MooSelect.Stage.js
+    - Source/files/MooSelect.Searcher.js
+    - Source/files/MooSelect.Result.js
+    - Source/files/MooSelect.Results.js
+    - Source/files/MooSelect.Remote.js
+    - Source/files/MooSelect.Results.Remote.js
+    - Source/files/MooSelect.Formular.js
+  output:
+    - Source/MooSelect.js
+
+jsmin:
+  filters:
+    - cat Source/MooSelect.js | jsmin > %{output}
+  input:
+  - Source/MooSelect.js
+  output:
+  - Source/MooSelect.min.js
