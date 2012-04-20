@@ -4,6 +4,13 @@ MooSelect is a full-fledged select, multiple select and autocomplete replacement
 
 With MooSelect, all of your select, multiple select and autocomplete elements will have the same appearance and will function exactly the same.
 
+## Requirements
+
+- MooTools Core 1.4+ (1.3 works too, but there are issues with the setOpacity() visibility so its best to use 1.4)
+- MooTools More (Fx.Scroll, Binds, Locale, Class.Refactor)
+- MooTools-Formular (optional)
+- MooTools-Scour (optional)
+
 ## Usage
 
 Here is a quick and dirty example of how to use the plugin:
