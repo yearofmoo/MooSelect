@@ -19,3 +19,15 @@ new MooSelect(select,{
 
 More details and demos can be found here:
 http://www.yearofmoo.com/mooselect
+
+## Repository Demos
+
+The repo demos rely on other javascript plugin(s) (which are hosted on github), but are not required for standard use of MooSelect. Therefore the plugins are assigned apart of the repository as git dependencies (which are specified in the .gitdepends file).
+
+To install the demo files, do the following:
+
+1. Clone MooSelect.git
+
+2. Install Git-Concat (https://github.com/matsko/Git-Depend)
+
+3. Run the depend downloader (./.git/bin/gitdepend)
