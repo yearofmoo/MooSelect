@@ -1,16 +1,16 @@
 src:
   input:
-    - Source/files/MooSelect.Licence.txt
-    - Source/files/MooSelect.Base.js
-    - Source/files/MooSelect.Locale.js
-    - Source/files/MooSelect.Message.js
-    - Source/files/MooSelect.Stage.js
-    - Source/files/MooSelect.Searcher.js
-    - Source/files/MooSelect.Result.js
-    - Source/files/MooSelect.Results.js
-    - Source/files/MooSelect.Remote.js
-    - Source/files/MooSelect.Results.Remote.js
-    - Source/files/MooSelect.Formular.js
+    - Source/src/MooSelect.Licence.txt
+    - Source/src/MooSelect.Base.js
+    - Source/src/MooSelect.Locale.js
+    - Source/src/MooSelect.Message.js
+    - Source/src/MooSelect.Stage.js
+    - Source/src/MooSelect.Searcher.js
+    - Source/src/MooSelect.Result.js
+    - Source/src/MooSelect.Results.js
+    - Source/src/MooSelect.Remote.js
+    - Source/src/MooSelect.Results.Remote.js
+    - Source/src/MooSelect.Formular.js
   output:
     - Source/MooSelect.js
 
