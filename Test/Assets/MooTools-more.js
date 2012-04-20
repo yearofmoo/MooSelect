@@ -1,76 +1,25 @@
-// MooTools: the javascript framework.
-// Load this file's selection again by visiting: http://mootools.net/more/dd5b84594dc4c16de16f47ec6cbdbe12 
-// Or build this file again with packager using: packager build More/More More/Events.Pseudos More/Class.Refactor More/Class.Binds More/Class.Occlude More/Chain.Wait More/Array.Extras More/Date More/Date.Extras More/Number.Format More/Object.Extras More/String.Extras More/String.QueryString More/URI More/URI.Relative More/Hash More/Hash.Extras More/Element.Forms More/Elements.From More/Element.Event.Pseudos More/Element.Event.Pseudos.Keys More/Element.Delegation More/Element.Measure More/Element.Pin More/Element.Position More/Element.Shortcuts More/Form.Request More/Form.Request.Append More/Form.Validator More/Form.Validator.Inline More/Form.Validator.Extras More/OverText More/Fx.Elements More/Fx.Accordion More/Fx.Move More/Fx.Reveal More/Fx.Scroll More/Fx.Slide More/Fx.SmoothScroll More/Fx.Sort More/Drag More/Drag.Move More/Slider More/Sortables More/Request.JSONP More/Request.Queue More/Request.Periodical More/Assets More/Color More/Group More/Hash.Cookie More/IframeShim More/Table More/HtmlTable More/HtmlTable.Zebra More/HtmlTable.Sort More/HtmlTable.Select More/Keyboard More/Keyboard.Extras More/Mask More/Scroller More/Tips More/Spinner More/Locale More/Locale.Set.From More/Locale.en-US.Date More/Locale.en-US.Form.Validator More/Locale.en-US.Number
-/*
----
-
-script: More.js
-
-name: More
-
-description: MooTools More
-
-license: MIT-style license
-
-authors:
-  - Guillermo Rauch
-  - Thomas Aylott
-  - Scott Kyle
-  - Arian Stolwijk
-  - Tim Wienk
-  - Christoph Pojer
-  - Aaron Newton
-  - Jacob Thornton
-
-requires:
-  - Core/MooTools
-
-provides: [MooTools.More]
-
-...
-*/
-
 MooTools.More = {
-	'version': '1.3.2.1',
-	'build': 'e586bcd2496e9b22acfde32e12f84d49ce09e59d'
+	'version': '1.4.0.1',
+	'build': 'a4244edf2aa97ac8a196fc96082dd35af1abab87'
 };
-
-
-/*
----
-
-name: Events.Pseudos
-
-description: Adds the functionality to add pseudo events
-
-license: MIT-style license
-
-authors:
-  - Arian Stolwijk
-
-requires: [Core/Class.Extras, Core/Slick.Parser, More/MooTools.More]
-
-provides: [Events.Pseudos]
-
-...
-*/
+(function(){
 
 Events.Pseudos = function(pseudos, addEvent, removeEvent){
 
-	var storeKey = 'monitorEvents:';
+	var storeKey = '_monitorEvents:';
 
 	var storageOf = function(object){
 		return {
 			store: object.store ? function(key, value){
 				object.store(storeKey + key, value);
 			} : function(key, value){
-				(object.$monitorEvents || (object.$monitorEvents = {}))[key] = value;
+				(object._monitorEvents || (object._monitorEvents = {}))[key] = value;
 			},
 			retrieve: object.retrieve ? function(key, dflt){
 				return object.retrieve(storeKey + key, dflt);
 			} : function(key, dflt){
-				if (!object.$monitorEvents) return dflt;
-				return object.$monitorEvents[key] || dflt;
+				if (!object._monitorEvents) return dflt;
+				return object._monitorEvents[key] || dflt;
 			}
 		};
 	};
@@ -83,22 +32,18 @@ Events.Pseudos = function(pseudos, addEvent, removeEvent){
 			l = parsedPseudos.length,
 			splits = [];
 
-		while (l--) if (pseudos[parsedPseudos[l].key]){
-			splits.push({
+		while (l--){
+			var pseudo = parsedPseudos[l].key,
+				listener = pseudos[pseudo];
+			if (listener != null) splits.push({
 				event: parsed.tag,
 				value: parsedPseudos[l].value,
-				pseudo: parsedPseudos[l].key,
-				original: type
+				pseudo: pseudo,
+				original: type,
+				listener: listener
 			});
 		}
-
 		return splits.length ? splits : null;
-	};
-
-	var mergePseudoOptions = function(split){
-		return Object.merge.apply(this, split.map(function(item){
-			return pseudos[item.pseudo].options || {};
-		}));
 	};
 
 	return {
@@ -110,30 +55,24 @@ Events.Pseudos = function(pseudos, addEvent, removeEvent){
 			var storage = storageOf(this),
 				events = storage.retrieve(type, []),
 				eventType = split[0].event,
-				options = mergePseudoOptions(split),
-				stack = fn,
-				eventOptions = options[eventType] || {},
 				args = Array.slice(arguments, 2),
-				self = this,
-				monitor;
-
-			if (eventOptions.args) args.append(Array.from(eventOptions.args));
-			if (eventOptions.base) eventType = eventOptions.base;
-			if (eventOptions.onAdd) eventOptions.onAdd(this);
+				stack = fn,
+				self = this;
 
 			split.each(function(item){
-				var stackFn = stack;
-				stack = function(){
-					(eventOptions.listener || pseudos[item.pseudo].listener).call(self, item, stackFn, arguments, monitor, options);
+				var listener = item.listener,
+					stackFn = stack;
+				if (listener == false) eventType += ':' + item.pseudo + '(' + item.value + ')';
+				else stack = function(){
+					listener.call(self, item, stackFn, arguments, stack);
 				};
 			});
-			monitor = stack.bind(this);
 
-			events.include({event: fn, monitor: monitor});
+			events.include({type: eventType, event: fn, monitor: stack});
 			storage.store(type, events);
 
-			addEvent.apply(this, [type, fn].concat(args));
-			return addEvent.apply(this, [eventType, monitor].concat(args));
+			if (type != eventType) addEvent.apply(this, [type, fn].concat(args));
+			return addEvent.apply(this, [eventType, stack].concat(args));
 		},
 
 		removeEvent: function(type, fn){
@@ -144,18 +83,11 @@ Events.Pseudos = function(pseudos, addEvent, removeEvent){
 				events = storage.retrieve(type);
 			if (!events) return this;
 
-			var eventType = split[0].event,
-				options = mergePseudoOptions(split),
-				eventOptions = options[eventType] || {},
-				args = Array.slice(arguments, 2);
-
-			if (eventOptions.args) args.append(Array.from(eventOptions.args));
-			if (eventOptions.base) eventType = eventOptions.base;
-			if (eventOptions.onRemove) eventOptions.onRemove(this);
+			var args = Array.slice(arguments, 2);
 
 			removeEvent.apply(this, [type, fn].concat(args));
 			events.each(function(monitor, i){
-				if (!fn || monitor.event == fn) removeEvent.apply(this, [eventType, monitor.monitor].concat(args));
+				if (!fn || monitor.event == fn) removeEvent.apply(this, [monitor.type, monitor.monitor].concat(args));
 				delete events[i];
 			}, this);
 
@@ -167,40 +99,32 @@ Events.Pseudos = function(pseudos, addEvent, removeEvent){
 
 };
 
-(function(){
-
 var pseudos = {
 
-	once: {
-		listener: function(split, fn, args, monitor){
+	once: function(split, fn, args, monitor){
+		fn.apply(this, args);
+		this.removeEvent(split.event, monitor)
+			.removeEvent(split.original, fn);
+	},
+
+	throttle: function(split, fn, args){
+		if (!fn._throttled){
 			fn.apply(this, args);
-			this.removeEvent(split.event, monitor)
-				.removeEvent(split.original, fn);
+			fn._throttled = setTimeout(function(){
+				fn._throttled = false;
+			}, split.value || 250);
 		}
 	},
 
-	throttle: {
-		listener: function(split, fn, args){
-			if (!fn._throttled){
-				fn.apply(this, args);
-				fn._throttled = setTimeout(function(){
-					fn._throttled = false;
-				}, split.value || 250);
-			}
-		}
-	},
-
-	pause: {
-		listener: function(split, fn, args){
-			clearTimeout(fn._pause);
-			fn._pause = fn.delay(split.value || 250, this, args);
-		}
+	pause: function(split, fn, args){
+		clearTimeout(fn._pause);
+		fn._pause = fn.delay(split.value || 250, this, args);
 	}
 
 };
 
 Events.definePseudo = function(key, listener){
-	pseudos[key] = Type.isFunction(listener) ? {listener: listener} : listener;
+	pseudos[key] = listener;
 	return this;
 };
 
@@ -1023,19 +947,19 @@ Date.implement({
 	},
 
 	isValid: function(date){
-		return !isNaN((date || this).valueOf());
+		if (!date) date = this;
+		return typeOf(date) == 'date' && !isNaN(date.valueOf());
 	},
 
-	format: function(f){
+	format: function(format){
 		if (!this.isValid()) return 'invalid date';
-		if (!f) f = '%x %X';
 
-		var formatLower = f.toLowerCase();
-		if (formatters[formatLower]) return formatters[formatLower](this); // it's a formatter!
-		f = formats[formatLower] || f; // replace short-hand with actual format
+		if (!format) format = '%x %X';
+		if (typeof format == 'string') format = formats[format.toLowerCase()] || format;
+		if (typeof format == 'function') return format(this);
 
 		var d = this;
-		return f.replace(/%([a-z%])/gi,
+		return format.replace(/%([a-z%])/gi,
 			function($0, $1){
 				switch ($1){
 					case 'a': return Date.getMsg('days_abbr')[d.get('day')];
@@ -1082,18 +1006,15 @@ Date.implement({
 	strftime: 'format'
 });
 
-var formats = {
-	db: '%Y-%m-%d %H:%M:%S',
-	compact: '%Y%m%dT%H%M%S',
-	'short': '%d %b %H:%M',
-	'long': '%B %d, %Y %H:%M'
-};
-
 // The day and month abbreviations are standardized, so we cannot use simply %a and %b because they will get localized
 var rfcDayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
 	rfcMonthAbbr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-var formatters = {
+var formats = {
+	db: '%Y-%m-%d %H:%M:%S',
+	compact: '%Y%m%dT%H%M%S',
+	'short': '%d %b %H:%M',
+	'long': '%B %d, %Y %H:%M',
 	rfc822: function(date){
 		return rfcDayAbbr[date.get('day')] + date.format(', %d ') + rfcMonthAbbr[date.get('month')] + date.format(' %Y %H:%M:%S %Z');
 	},
@@ -1112,7 +1033,6 @@ var formatters = {
 		);
 	}
 };
-
 
 var parsePatterns = [],
 	nativeParse = Date.parse;
@@ -1225,11 +1145,6 @@ Date.extend({
 		return this;
 	},
 
-	defineFormats: function(formats){
-		for (var name in formats) Date.defineFormat(name, formats[name]);
-		return this;
-	},
-
 	//<1.2compat>
 	parsePatterns: parsePatterns,
 	//</1.2compat>
@@ -1250,6 +1165,8 @@ Date.extend({
 		return this;
 	}
 
+}).extend({
+	defineFormats: Date.defineFormat.overloadSetter()
 });
 
 var regexOf = function(type){
@@ -1645,18 +1562,20 @@ Number.implement({
 		return value;
 	},
 
-	formatCurrency: function(){
+	formatCurrency: function(decimals){
 		var locale = Locale.get('Number.currency') || {};
 		if (locale.scientific == null) locale.scientific = false;
-		if (locale.decimals == null) locale.decimals = 2;
+		locale.decimals = decimals != null ? decimals
+			: (locale.decimals == null ? 2 : locale.decimals);
 
 		return this.format(locale);
 	},
 
-	formatPercentage: function(){
+	formatPercentage: function(decimals){
 		var locale = Locale.get('Number.percentage') || {};
 		if (locale.suffix == null) locale.suffix = '%';
-		if (locale.decimals == null) locale.decimals = 2;
+		locale.decimals = decimals != null ? decimals
+			: (locale.decimals == null ? 2 : locale.decimals);
 
 		return this.format(locale);
 	}
@@ -2497,23 +2416,23 @@ license: MIT-style license
 authors:
   - Arian Stolwijk
 
-requires: [Core/Element.Event, Events.Pseudos]
+requires: [Core/Element.Event, Core/Element.Delegation, Events.Pseudos]
 
-provides: [Element.Event.Pseudos]
+provides: [Element.Event.Pseudos, Element.Delegation]
 
 ...
 */
 
 (function(){
 
-var pseudos = {},
+var pseudos = {relay: false},
 	copyFromEvents = ['once', 'throttle', 'pause'],
 	count = copyFromEvents.length;
 
 while (count--) pseudos[copyFromEvents[count]] = Events.lookupPseudo(copyFromEvents[count]);
 
-Event.definePseudo = function(key, listener){
-	pseudos[key] = Type.isFunction(listener) ? {listener: listener} : listener;
+DOMEvent.definePseudo = function(key, listener){
+	pseudos[key] = listener;
 	return this;
 };
 
@@ -2548,7 +2467,7 @@ var keysStoreKey = '$moo:keys-pressed',
 	keysKeyupStoreKey = '$moo:keys-keyup';
 
 
-Event.definePseudo('keys', function(split, fn, args){
+DOMEvent.definePseudo('keys', function(split, fn, args){
 
 	var event = args[0],
 		keys = [],
@@ -2579,172 +2498,29 @@ Event.definePseudo('keys', function(split, fn, args){
 
 });
 
-Object.append(Event.Keys, {
-	'shift': 16,
-	'control': 17,
-	'alt': 18,
-	'capslock': 20,
-	'pageup': 33,
-	'pagedown': 34,
-	'end': 35,
-	'home': 36,
-	'numlock': 144,
-	'scrolllock': 145,
-	';': 186,
-	'=': 187,
-	',': 188,
-	'-': Browser.firefox ? 109 : 189,
-	'.': 190,
-	'/': 191,
-	'`': 192,
-	'[': 219,
-	'\\': 220,
-	']': 221,
-	"'": 222,
-	'+': 107
-});
-
-})();
-
-
-/*
----
-
-script: Element.Delegation.js
-
-name: Element.Delegation
-
-description: Extends the Element native object to include the delegate method for more efficient event management.
-
-credits:
-  - "Event checking based on the work of Daniel Steigerwald. License: MIT-style license. Copyright: Copyright (c) 2008 Daniel Steigerwald, daniel.steigerwald.cz"
-
-license: MIT-style license
-
-authors:
-  - Aaron Newton
-  - Daniel Steigerwald
-
-requires: [/MooTools.More, Element.Event.Pseudos]
-
-provides: [Element.Delegation]
-
-...
-*/
-
-(function(){
-
-var eventListenerSupport = !(window.attachEvent && !window.addEventListener),
-	nativeEvents = Element.NativeEvents;
-
-nativeEvents.focusin = 2;
-nativeEvents.focusout = 2;
-
-var check = function(split, target, event){
-	var elementEvent = Element.Events[split.event], condition;
-	if (elementEvent) condition = elementEvent.condition;
-	return Slick.match(target, split.value) && (!condition || condition.call(target, event));
-};
-
-var bubbleUp = function(split, event, fn){
-	for (var target = event.target; target && target != this; target = document.id(target.parentNode)){
-		if (target && check(split, target, event)) return fn.call(target, event, target);
-	}
-};
-
-var formObserver = function(eventName){
-
-	var $delegationKey = '$delegation:';
-
-	return {
-		base: 'focusin',
-
-		onRemove: function(element){
-			element.retrieve($delegationKey + 'forms', []).each(function(el){
-				el.retrieve($delegationKey + 'listeners', []).each(function(listener){
-					el.removeEvent(eventName, listener);
-				});
-				el.eliminate($delegationKey + eventName + 'listeners')
-					.eliminate($delegationKey + eventName + 'originalFn');
-			});
-		},
-
-		listener: function(split, fn, args, monitor, options){
-			var event = args[0],
-				forms = this.retrieve($delegationKey + 'forms', []),
-				target = event.target,
-				form = (target.get('tag') == 'form') ? target : event.target.getParent('form');
-				
-			if (!form) return;
-				
-			var formEvents = form.retrieve($delegationKey + 'originalFn', []),
-				formListeners = form.retrieve($delegationKey + 'listeners', []),
-				self = this;
-
-			forms.include(form);
-			this.store($delegationKey + 'forms', forms);
-
-			if (!formEvents.contains(fn)){
-				var formListener = function(event){
-					bubbleUp.call(self, split, event, fn);
-				};
-				form.addEvent(eventName, formListener);
-
-				formEvents.push(fn);
-				formListeners.push(formListener);
-
-				form.store($delegationKey + eventName + 'originalFn', formEvents)
-					.store($delegationKey + eventName + 'listeners', formListeners);
-			}
-		}
-	};
-};
-
-var inputObserver = function(eventName){
-	return {
-		base: 'focusin',
-		listener: function(split, fn, args){
-			var events = {blur: function(){
-				this.removeEvents(events);
-			}}, self = this;
-			events[eventName] = function(event){
-				bubbleUp.call(self, split, event, fn);
-			};
-			args[0].target.addEvents(events);
-		}
-	};
-};
-
-var eventOptions = {
-	mouseenter: {
-		base: 'mouseover'
-	},
-	mouseleave: {
-		base: 'mouseout'
-	},
-	focus: {
-		base: 'focus' + (eventListenerSupport ? '' : 'in'),
-		args: [true]
-	},
-	blur: {
-		base: eventListenerSupport ? 'blur' : 'focusout',
-		args: [true]
-	}
-};
-
-if (!eventListenerSupport) Object.append(eventOptions, {
-	submit: formObserver('submit'),
-	reset: formObserver('reset'),
-	change: inputObserver('change'),
-	select: inputObserver('select')
-});
-
-Event.definePseudo('relay', {
-	listener: function(split, fn, args){
-		bubbleUp.call(this, split, args[0], fn);
-	},
-	options: eventOptions
-});
+DOMEvent.defineKeys({
+	'16': 'shift',
+	'17': 'control',
+	'18': 'alt',
+	'20': 'capslock',
+	'33': 'pageup',
+	'34': 'pagedown',
+	'35': 'end',
+	'36': 'home',
+	'144': 'numlock',
+	'145': 'scrolllock',
+	'186': ';',
+	'187': '=',
+	'188': ',',
+	'190': '.',
+	'191': '/',
+	'192': '`',
+	'219': '[',
+	'220': '\\',
+	'221': ']',
+	'222': "'",
+	'107': '+'
+}).defineKey(Browser.firefox ? 109 : 189, '-');
 
 })();
 
@@ -2917,138 +2693,6 @@ Element.implement({
 	}
 
 });
-
-})();
-
-
-/*
----
-
-script: Element.Pin.js
-
-name: Element.Pin
-
-description: Extends the Element native object to include the pin method useful for fixed positioning for elements.
-
-license: MIT-style license
-
-authors:
-  - Aaron Newton
-
-requires:
-  - Core/Element.Event
-  - Core/Element.Dimensions
-  - Core/Element.Style
-  - /MooTools.More
-
-provides: [Element.Pin]
-
-...
-*/
-
-(function(){
-	var supportsPositionFixed = false,
-		supportTested = false;
-
-	var testPositionFixed = function(){
-		var test = new Element('div').setStyles({
-			position: 'fixed',
-			top: 0,
-			right: 0
-		}).inject(document.body);
-		supportsPositionFixed = (test.offsetTop === 0);
-		test.dispose();
-		supportTested = true;
-	};
-
-	Element.implement({
-
-		pin: function(enable, forceScroll){
-			if (!supportTested) testPositionFixed();
-			if (this.getStyle('display') == 'none') return this;
-
-			var pinnedPosition,
-				scroll = window.getScroll(),
-				parent,
-				scrollFixer;
-
-			if (enable !== false){
-				pinnedPosition = this.getPosition(supportsPositionFixed ? document.body : this.getOffsetParent());
-				if (!this.retrieve('pin:_pinned')){
-					var currentPosition = {
-						top: pinnedPosition.y - scroll.y,
-						left: pinnedPosition.x - scroll.x
-					};
-
-					if (supportsPositionFixed && !forceScroll){
-						this.setStyle('position', 'fixed').setStyles(currentPosition);
-					} else {
-
-						parent = this.getOffsetParent();
-						var position = this.getPosition(parent),
-							styles = this.getStyles('left', 'top');
-
-						if (parent && styles.left == 'auto' || styles.top == 'auto') this.setPosition(position);
-						if (this.getStyle('position') == 'static') this.setStyle('position', 'absolute');
-
-						position = {
-							x: styles.left.toInt() - scroll.x,
-							y: styles.top.toInt() - scroll.y
-						};
-
-						scrollFixer = function(){
-							if (!this.retrieve('pin:_pinned')) return;
-							var scroll = window.getScroll();
-							this.setStyles({
-								left: position.x + scroll.x,
-								top: position.y + scroll.y
-							});
-						}.bind(this);
-
-						this.store('pin:_scrollFixer', scrollFixer);
-						window.addEvent('scroll', scrollFixer);
-					}
-					this.store('pin:_pinned', true);
-				}
-
-			} else {
-				if (!this.retrieve('pin:_pinned')) return this;
-
-				parent = this.getParent();
-				var offsetParent = (parent.getComputedStyle('position') != 'static' ? parent : parent.getOffsetParent());
-
-				pinnedPosition = this.getPosition(offsetParent);
-
-				this.store('pin:_pinned', false);
-				scrollFixer = this.retrieve('pin:_scrollFixer');
-				if (!scrollFixer){
-					this.setStyles({
-						position: 'absolute',
-						top: pinnedPosition.y + scroll.y,
-						left: pinnedPosition.x + scroll.x
-					});
-				} else {
-					this.store('pin:_scrollFixer', null);
-					window.removeEvent('scroll', scrollFixer);
-				}
-				this.removeClass('isPinned');
-			}
-			return this;
-		},
-
-		unpin: function(){
-			return this.pin(false);
-		},
-
-		togglePin: function(){
-			return this.pin(!this.retrieve('pin:_pinned'));
-		}
-
-	});
-
-//<1.2compat>
-Element.alias('togglepin', 'togglePin');
-//</1.2compat>
 
 })();
 
@@ -3274,7 +2918,7 @@ var local = Element.Position = {
 Element.implement({
 
 	position: function(options){
-		if (options && (options.x != null || options.y != null)) {
+		if (options && (options.x != null || options.y != null)){
 			return (original ? original.apply(this, arguments) : this);
 		}
 		var position = this.setStyle('position', 'absolute').calculatePosition(options);
@@ -4123,7 +3767,7 @@ if (!window.Form) window.Form = {};
 
 	Element.implement('formUpdate', function(update, options){
 		var fq = this.retrieve('form.request');
-		if (!fq) {
+		if (!fq){
 			fq = new Form.Request(this, update, options);
 		} else {
 			if (update) fq.setTarget(update);
@@ -4486,6 +4130,7 @@ provides: [Locale.en-US.Form.Validator]
 Locale.define('en-US', 'FormValidator', {
 
 	required: 'This field is required.',
+	length: 'Please enter {length} characters (you entered {elLength} characters)',
 	minLength: 'Please enter at least {minLength} characters (you entered {length} characters).',
 	maxLength: 'Please enter no more than {maxLength} characters (you entered {length} characters).',
 	integer: 'Please enter an integer in this field. Numbers with decimals (e.g. 1.25) are not permitted.',
@@ -4875,10 +4520,22 @@ Form.Validator.addAllThese([
 		}
 	}],
 
+	['length', {
+		errorMsg: function(element, props){
+			if (typeOf(props.length) != 'null')
+				return Form.Validator.getMsg('length').substitute({length: props.length, elLength: element.get('value').length});
+			else return '';
+		},
+		test: function(element, props){
+			if (typeOf(props.length) != 'null') return (element.get('value').length == props.length || element.get('value').length == 0);
+			else return true;
+		}
+	}],	
+
 	['minLength', {
 		errorMsg: function(element, props){
 			if (typeOf(props.minLength) != 'null')
-				return Form.Validator.getMsg('minLength').substitute({minLength:props.minLength,length:element.get('value').length });
+				return Form.Validator.getMsg('minLength').substitute({minLength: props.minLength, length: element.get('value').length});
 			else return '';
 		},
 		test: function(element, props){
@@ -4891,7 +4548,7 @@ Form.Validator.addAllThese([
 		errorMsg: function(element, props){
 			//props is {maxLength:10}
 			if (typeOf(props.maxLength) != 'null')
-				return Form.Validator.getMsg('maxLength').substitute({maxLength:props.maxLength,length:element.get('value').length });
+				return Form.Validator.getMsg('maxLength').substitute({maxLength: props.maxLength, length: element.get('value').length});
 			else return '';
 		},
 		test: function(element, props){
@@ -5043,198 +4700,6 @@ var FormValidator = Form.Validator;
 //</1.2compat>
 
 
-
-
-/*
----
-
-script: Form.Validator.Inline.js
-
-name: Form.Validator.Inline
-
-description: Extends Form.Validator to add inline messages.
-
-license: MIT-style license
-
-authors:
-  - Aaron Newton
-
-requires:
-  - /Form.Validator
-
-provides: [Form.Validator.Inline]
-
-...
-*/
-
-Form.Validator.Inline = new Class({
-
-	Extends: Form.Validator,
-
-	options: {
-		showError: function(errorElement){
-			if (errorElement.reveal) errorElement.reveal();
-			else errorElement.setStyle('display', 'block');
-		},
-		hideError: function(errorElement){
-			if (errorElement.dissolve) errorElement.dissolve();
-			else errorElement.setStyle('display', 'none');
-		},
-		scrollToErrorsOnSubmit: true,
-		scrollToErrorsOnBlur: false,
-		scrollToErrorsOnChange: false,
-		scrollFxOptions: {
-			transition: 'quad:out',
-			offset: {
-				y: -20
-			}
-		}
-	},
-
-	initialize: function(form, options){
-		this.parent(form, options);
-		this.addEvent('onElementValidate', function(isValid, field, className, warn){
-			var validator = this.getValidator(className);
-			if (!isValid && validator.getError(field)){
-				if (warn) field.addClass('warning');
-				var advice = this.makeAdvice(className, field, validator.getError(field), warn);
-				this.insertAdvice(advice, field);
-				this.showAdvice(className, field);
-			} else {
-				this.hideAdvice(className, field);
-			}
-		});
-	},
-
-	makeAdvice: function(className, field, error, warn){
-		var errorMsg = (warn) ? this.warningPrefix : this.errorPrefix;
-			errorMsg += (this.options.useTitles) ? field.title || error:error;
-		var cssClass = (warn) ? 'warning-advice' : 'validation-advice';
-		var advice = this.getAdvice(className, field);
-		if (advice){
-			advice = advice.set('html', errorMsg);
-		} else {
-			advice = new Element('div', {
-				html: errorMsg,
-				styles: { display: 'none' },
-				id: 'advice-' + className.split(':')[0] + '-' + this.getFieldId(field)
-			}).addClass(cssClass);
-		}
-		field.store('$moo:advice-' + className, advice);
-		return advice;
-	},
-
-	getFieldId : function(field){
-		return field.id ? field.id : field.id = 'input_' + field.name;
-	},
-
-	showAdvice: function(className, field){
-		var advice = this.getAdvice(className, field);
-		if (
-			advice &&
-			!field.retrieve('$moo:' + this.getPropName(className)) &&
-			(
-				advice.getStyle('display') == 'none' ||
-				advice.getStyle('visiblity') == 'hidden' ||
-				advice.getStyle('opacity') == 0
-			)
-		){
-			field.store('$moo:' + this.getPropName(className), true);
-			this.options.showError(advice);
-			this.fireEvent('showAdvice', [field, advice, className]);
-		}
-	},
-
-	hideAdvice: function(className, field){
-		var advice = this.getAdvice(className, field);
-		if (advice && field.retrieve('$moo:' + this.getPropName(className))){
-			field.store('$moo:' + this.getPropName(className), false);
-			this.options.hideError(advice);
-			this.fireEvent('hideAdvice', [field, advice, className]);
-		}
-	},
-
-	getPropName: function(className){
-		return 'advice' + className;
-	},
-
-	resetField: function(field){
-		field = document.id(field);
-		if (!field) return this;
-		this.parent(field);
-		field.get('validators').each(function(className){
-			this.hideAdvice(className, field);
-		}, this);
-		return this;
-	},
-
-	getAllAdviceMessages: function(field, force){
-		var advice = [];
-		if (field.hasClass('ignoreValidation') && !force) return advice;
-		var validators = field.get('validators').some(function(cn){
-			var warner = cn.test('^warn-') || field.hasClass('warnOnly');
-			if (warner) cn = cn.replace(/^warn-/, '');
-			var validator = this.getValidator(cn);
-			if (!validator) return;
-			advice.push({
-				message: validator.getError(field),
-				warnOnly: warner,
-				passed: validator.test(),
-				validator: validator
-			});
-		}, this);
-		return advice;
-	},
-
-	getAdvice: function(className, field){
-		return field.retrieve('$moo:advice-' + className);
-	},
-
-	insertAdvice: function(advice, field){
-		//Check for error position prop
-		var props = field.get('validatorProps');
-		//Build advice
-		if (!props.msgPos || !document.id(props.msgPos)){
-			if (field.type && field.type.toLowerCase() == 'radio') field.getParent().adopt(advice);
-			else advice.inject(document.id(field), 'after');
-		} else {
-			document.id(props.msgPos).grab(advice);
-		}
-	},
-
-	validateField: function(field, force, scroll){
-		var result = this.parent(field, force);
-		if (((this.options.scrollToErrorsOnSubmit && scroll == null) || scroll) && !result){
-			var failed = document.id(this).getElement('.validation-failed');
-			var par = document.id(this).getParent();
-			while (par != document.body && par.getScrollSize().y == par.getSize().y){
-				par = par.getParent();
-			}
-			var fx = par.retrieve('$moo:fvScroller');
-			if (!fx && window.Fx && Fx.Scroll){
-				fx = new Fx.Scroll(par, this.options.scrollFxOptions);
-				par.store('$moo:fvScroller', fx);
-			}
-			if (failed){
-				if (fx) fx.toElement(failed);
-				else par.scrollTo(par.getScroll().x, failed.getPosition(par).y - 20);
-			}
-		}
-		return result;
-	},
-
-	watchFields: function(fields){
-		fields.each(function(el){
-		if (this.options.evaluateFieldsOnBlur){
-			el.addEvent('blur', this.validationMonitor.pass([el, false, this.options.scrollToErrorsOnBlur], this));
-		}
-		if (this.options.evaluateFieldsOnChange){
-				el.addEvent('change', this.validationMonitor.pass([el, true, this.options.scrollToErrorsOnChange], this));
-			}
-		}, this);
-	}
-
-});
 
 
 /*
@@ -5605,7 +5070,6 @@ var OverText = new Class({
 			change: this.assert
 		});
 		window.addEvent('resize', this.reposition);
-		this.assert(true);
 		this.reposition();
 		return this;
 	},
@@ -6478,78 +5942,6 @@ Element.implement({
 /*
 ---
 
-script: Fx.SmoothScroll.js
-
-name: Fx.SmoothScroll
-
-description: Class for creating a smooth scrolling effect to all internal links on the page.
-
-license: MIT-style license
-
-authors:
-  - Valerio Proietti
-
-requires:
-  - Core/Slick.Finder
-  - /Fx.Scroll
-
-provides: [Fx.SmoothScroll]
-
-...
-*/
-
-/*<1.2compat>*/var SmoothScroll = /*</1.2compat>*/Fx.SmoothScroll = new Class({
-
-	Extends: Fx.Scroll,
-
-	options: {
-		axes: ['x', 'y']
-	},
-
-	initialize: function(options, context){
-		context = context || document;
-		this.doc = context.getDocument();
-		this.parent(this.doc, options);
-
-		var win = context.getWindow(),
-			location = win.location.href.match(/^[^#]*/)[0] + '#',
-			links = $$(this.options.links || this.doc.links);
-
-		links.each(function(link){
-			if (link.href.indexOf(location) != 0) return;
-			var anchor = link.href.substr(location.length);
-			if (anchor) this.useLink(link, anchor);
-		}, this);
-
-		this.addEvent('complete', function(){
-			win.location.hash = this.anchor;
-			this.element.scrollTo(this.to[0], this.to[1]);
-		}, true);
-	},
-
-	useLink: function(link, anchor){
-
-		link.addEvent('click', function(event){
-			var el = document.id(anchor) || this.doc.getElement('a[name=' + anchor + ']');
-			if (!el) return;
-
-			event.preventDefault();
-			this.toElement(el, this.options.axes).chain(function(){
-				this.fireEvent('scrolledTo', [link, el]);
-			}.bind(this));
-
-			this.anchor = anchor;
-
-		}.bind(this));
-
-		return this;
-	}
-});
-
-
-/*
----
-
 script: Fx.Sort.js
 
 name: Fx.Sort
@@ -7159,233 +6551,6 @@ Element.implement({
 /*
 ---
 
-script: Slider.js
-
-name: Slider
-
-description: Class for creating horizontal and vertical slider controls.
-
-license: MIT-style license
-
-authors:
-  - Valerio Proietti
-
-requires:
-  - Core/Element.Dimensions
-  - /Class.Binds
-  - /Drag
-  - /Element.Measure
-
-provides: [Slider]
-
-...
-*/
-
-var Slider = new Class({
-
-	Implements: [Events, Options],
-
-	Binds: ['clickedElement', 'draggedKnob', 'scrolledElement'],
-
-	options: {/*
-		onTick: function(intPosition){},
-		onChange: function(intStep){},
-		onComplete: function(strStep){},*/
-		onTick: function(position){
-			this.setKnobPosition(position);
-		},
-		initialStep: 0,
-		snap: false,
-		offset: 0,
-		range: false,
-		wheel: false,
-		steps: 100,
-		mode: 'horizontal'
-	},
-
-	initialize: function(element, knob, options){
-		this.setOptions(options);
-		options = this.options;
-		this.element = document.id(element);
-		knob = this.knob = document.id(knob);
-		this.previousChange = this.previousEnd = this.step = -1;
-
-		var limit = {},
-			modifiers = {x: false, y: false};
-
-		switch (options.mode){
-			case 'vertical':
-				this.axis = 'y';
-				this.property = 'top';
-				this.offset = 'offsetHeight';
-				break;
-			case 'horizontal':
-				this.axis = 'x';
-				this.property = 'left';
-				this.offset = 'offsetWidth';
-		}
-
-		this.setSliderDimensions();
-		this.setRange(options.range);
-
-		if (knob.getStyle('position') == 'static') knob.setStyle('position', 'relative');
-		knob.setStyle(this.property, -options.offset);
-		modifiers[this.axis] = this.property;
-		limit[this.axis] = [-options.offset, this.full - options.offset];
-
-		var dragOptions = {
-			snap: 0,
-			limit: limit,
-			modifiers: modifiers,
-			onDrag: this.draggedKnob,
-			onStart: this.draggedKnob,
-			onBeforeStart: (function(){
-				this.isDragging = true;
-			}).bind(this),
-			onCancel: function(){
-				this.isDragging = false;
-			}.bind(this),
-			onComplete: function(){
-				this.isDragging = false;
-				this.draggedKnob();
-				this.end();
-			}.bind(this)
-		};
-		if (options.snap) this.setSnap(dragOptions);
-
-		this.drag = new Drag(knob, dragOptions);
-		this.attach();
-		if (options.initialStep != null) this.set(options.initialStep);
-	},
-
-	attach: function(){
-		this.element.addEvent('mousedown', this.clickedElement);
-		if (this.options.wheel) this.element.addEvent('mousewheel', this.scrolledElement);
-		this.drag.attach();
-		return this;
-	},
-
-	detach: function(){
-		this.element.removeEvent('mousedown', this.clickedElement)
-			.removeEvent('mousewheel', this.scrolledElement);
-		this.drag.detach();
-		return this;
-	},
-
-	autosize: function(){
-		this.setSliderDimensions()
-			.setKnobPosition(this.toPosition(this.step));
-		this.drag.options.limit[this.axis] = [-this.options.offset, this.full - this.options.offset];
-		if (this.options.snap) this.setSnap();
-		return this;
-	},
-
-	setSnap: function(options){
-		if (!options) options = this.drag.options;
-		options.grid = Math.ceil(this.stepWidth);
-		options.limit[this.axis][1] = this.full;
-		return this;
-	},
-
-	setKnobPosition: function(position){
-		if (this.options.snap) position = this.toPosition(this.step);
-		this.knob.setStyle(this.property, position);
-		return this;
-	},
-
-	setSliderDimensions: function(){
-		this.full = this.element.measure(function(){
-			this.half = this.knob[this.offset] / 2;
-			return this.element[this.offset] - this.knob[this.offset] + (this.options.offset * 2);
-		}.bind(this));
-		return this;
-	},
-
-	set: function(step){
-		if (!((this.range > 0) ^ (step < this.min))) step = this.min;
-		if (!((this.range > 0) ^ (step > this.max))) step = this.max;
-
-		this.step = Math.round(step);
-		return this.checkStep()
-			.fireEvent('tick', this.toPosition(this.step))
-			.end();
-	},
-
-	setRange: function(range, pos){
-		this.min = Array.pick([range[0], 0]);
-		this.max = Array.pick([range[1], this.options.steps]);
-		this.range = this.max - this.min;
-		this.steps = this.options.steps || this.full;
-		this.stepSize = Math.abs(this.range) / this.steps;
-		this.stepWidth = this.stepSize * this.full / Math.abs(this.range);
-		if (range) this.set(Array.pick([pos, this.step]).floor(this.min).max(this.max));
-		return this;
-	},
-
-	clickedElement: function(event){
-		if (this.isDragging || event.target == this.knob) return;
-
-		var dir = this.range < 0 ? -1 : 1,
-			position = event.page[this.axis] - this.element.getPosition()[this.axis] - this.half;
-
-		position = position.limit(-this.options.offset, this.full - this.options.offset);
-
-		this.step = Math.round(this.min + dir * this.toStep(position));
-
-		this.checkStep()
-			.fireEvent('tick', position)
-			.end();
-	},
-
-	scrolledElement: function(event){
-		var mode = (this.options.mode == 'horizontal') ? (event.wheel < 0) : (event.wheel > 0);
-		this.set(this.step + (mode ? -1 : 1) * this.stepSize);
-		event.stop();
-	},
-
-	draggedKnob: function(){
-		var dir = this.range < 0 ? -1 : 1,
-			position = this.drag.value.now[this.axis];
-
-		position = position.limit(-this.options.offset, this.full -this.options.offset);
-
-		this.step = Math.round(this.min + dir * this.toStep(position));
-		this.checkStep();
-	},
-
-	checkStep: function(){
-		var step = this.step;
-		if (this.previousChange != step){
-			this.previousChange = step;
-			this.fireEvent('change', step);
-		}
-		return this;
-	},
-
-	end: function(){
-		var step = this.step;
-		if (this.previousEnd !== step){
-			this.previousEnd = step;
-			this.fireEvent('complete', step + '');
-		}
-		return this;
-	},
-
-	toStep: function(position){
-		var step = (position + this.options.offset) * this.stepSize / this.full * this.steps;
-		return this.options.steps ? Math.round(step -= step % this.stepSize) : step;
-	},
-
-	toPosition: function(step){
-		return (this.full * Math.abs(this.min - step)) / (this.steps * this.stepSize) - this.options.offset;
-	}
-
-});
-
-
-/*
----
-
 script: Sortables.js
 
 name: Sortables
@@ -7533,12 +6698,12 @@ var Sortables = new Class({
 		if (
 			!this.idle ||
 			event.rightClick ||
-			['button', 'input', 'a'].contains(event.target.get('tag'))
+			['button', 'input', 'a', 'textarea'].contains(event.target.get('tag'))
 		) return;
 
 		this.idle = false;
 		this.element = element;
-		this.opacity = element.get('opacity');
+		this.opacity = element.getStyle('opacity');
 		this.list = element.getParent();
 		this.clone = this.getClone(event, element);
 
@@ -7553,7 +6718,7 @@ var Sortables = new Class({
 			onSnap: function(){
 				event.stop();
 				this.clone.setStyle('visibility', 'visible');
-				this.element.set('opacity', this.options.opacity || 0);
+				this.element.setStyle('opacity', this.options.opacity || 0);
 				this.fireEvent('start', [this.element, this.clone]);
 			}.bind(this),
 			onEnter: this.insert.bind(this),
@@ -7567,7 +6732,7 @@ var Sortables = new Class({
 
 	end: function(){
 		this.drag.detach();
-		this.element.set('opacity', this.opacity);
+		this.element.setStyle('opacity', this.opacity);
 		if (this.effect){
 			var dim = this.element.getStyles('width', 'height'),
 				clone = this.clone,
@@ -7765,273 +6930,6 @@ Request.JSONP.request_map = {};
 /*
 ---
 
-script: Request.Queue.js
-
-name: Request.Queue
-
-description: Controls several instances of Request and its variants to run only one request at a time.
-
-license: MIT-style license
-
-authors:
-  - Aaron Newton
-
-requires:
-  - Core/Element
-  - Core/Request
-  - /Class.Binds
-
-provides: [Request.Queue]
-
-...
-*/
-
-Request.Queue = new Class({
-
-	Implements: [Options, Events],
-
-	Binds: ['attach', 'request', 'complete', 'cancel', 'success', 'failure', 'exception'],
-
-	options: {/*
-		onRequest: function(argsPassedToOnRequest){},
-		onSuccess: function(argsPassedToOnSuccess){},
-		onComplete: function(argsPassedToOnComplete){},
-		onCancel: function(argsPassedToOnCancel){},
-		onException: function(argsPassedToOnException){},
-		onFailure: function(argsPassedToOnFailure){},
-		onEnd: function(){},
-		*/
-		stopOnFailure: true,
-		autoAdvance: true,
-		concurrent: 1,
-		requests: {}
-	},
-
-	initialize: function(options){
-		var requests;
-		if (options){
-			requests = options.requests;
-			delete options.requests;
-		}
-		this.setOptions(options);
-		this.requests = {};
-		this.queue = [];
-		this.reqBinders = {};
-
-		if (requests) this.addRequests(requests);
-	},
-
-	addRequest: function(name, request){
-		this.requests[name] = request;
-		this.attach(name, request);
-		return this;
-	},
-
-	addRequests: function(obj){
-		Object.each(obj, function(req, name){
-			this.addRequest(name, req);
-		}, this);
-		return this;
-	},
-
-	getName: function(req){
-		return Object.keyOf(this.requests, req);
-	},
-
-	attach: function(name, req){
-		if (req._groupSend) return this;
-		['request', 'complete', 'cancel', 'success', 'failure', 'exception'].each(function(evt){
-			if (!this.reqBinders[name]) this.reqBinders[name] = {};
-			this.reqBinders[name][evt] = function(){
-				this['on' + evt.capitalize()].apply(this, [name, req].append(arguments));
-			}.bind(this);
-			req.addEvent(evt, this.reqBinders[name][evt]);
-		}, this);
-		req._groupSend = req.send;
-		req.send = function(options){
-			this.send(name, options);
-			return req;
-		}.bind(this);
-		return this;
-	},
-
-	removeRequest: function(req){
-		var name = typeOf(req) == 'object' ? this.getName(req) : req;
-		if (!name && typeOf(name) != 'string') return this;
-		req = this.requests[name];
-		if (!req) return this;
-		['request', 'complete', 'cancel', 'success', 'failure', 'exception'].each(function(evt){
-			req.removeEvent(evt, this.reqBinders[name][evt]);
-		}, this);
-		req.send = req._groupSend;
-		delete req._groupSend;
-		return this;
-	},
-
-	getRunning: function(){
-		return Object.filter(this.requests, function(r){
-			return r.running;
-		});
-	},
-
-	isRunning: function(){
-		return !!(Object.keys(this.getRunning()).length);
-	},
-
-	send: function(name, options){
-		var q = function(){
-			this.requests[name]._groupSend(options);
-			this.queue.erase(q);
-		}.bind(this);
-
-		q.name = name;
-		if (Object.keys(this.getRunning()).length >= this.options.concurrent || (this.error && this.options.stopOnFailure)) this.queue.push(q);
-		else q();
-		return this;
-	},
-
-	hasNext: function(name){
-		return (!name) ? !!this.queue.length : !!this.queue.filter(function(q){ return q.name == name; }).length;
-	},
-
-	resume: function(){
-		this.error = false;
-		(this.options.concurrent - Object.keys(this.getRunning()).length).times(this.runNext, this);
-		return this;
-	},
-
-	runNext: function(name){
-		if (!this.queue.length) return this;
-		if (!name){
-			this.queue[0]();
-		} else {
-			var found;
-			this.queue.each(function(q){
-				if (!found && q.name == name){
-					found = true;
-					q();
-				}
-			});
-		}
-		return this;
-	},
-
-	runAll: function(){
-		this.queue.each(function(q){
-			q();
-		});
-		return this;
-	},
-
-	clear: function(name){
-		if (!name){
-			this.queue.empty();
-		} else {
-			this.queue = this.queue.map(function(q){
-				if (q.name != name) return q;
-				else return false;
-			}).filter(function(q){
-				return q;
-			});
-		}
-		return this;
-	},
-
-	cancel: function(name){
-		this.requests[name].cancel();
-		return this;
-	},
-
-	onRequest: function(){
-		this.fireEvent('request', arguments);
-	},
-
-	onComplete: function(){
-		this.fireEvent('complete', arguments);
-		if (!this.queue.length) this.fireEvent('end');
-	},
-
-	onCancel: function(){
-		if (this.options.autoAdvance && !this.error) this.runNext();
-		this.fireEvent('cancel', arguments);
-	},
-
-	onSuccess: function(){
-		if (this.options.autoAdvance && !this.error) this.runNext();
-		this.fireEvent('success', arguments);
-	},
-
-	onFailure: function(){
-		this.error = true;
-		if (!this.options.stopOnFailure && this.options.autoAdvance) this.runNext();
-		this.fireEvent('failure', arguments);
-	},
-
-	onException: function(){
-		this.error = true;
-		if (!this.options.stopOnFailure && this.options.autoAdvance) this.runNext();
-		this.fireEvent('exception', arguments);
-	}
-
-});
-
-
-/*
----
-
-script: Request.Periodical.js
-
-name: Request.Periodical
-
-description: Requests the same URL to pull data from a server but increases the intervals if no data is returned to reduce the load
-
-license: MIT-style license
-
-authors:
-  - Christoph Pojer
-
-requires:
-  - Core/Request
-  - /MooTools.More
-
-provides: [Request.Periodical]
-
-...
-*/
-
-Request.implement({
-
-	options: {
-		initialDelay: 5000,
-		delay: 5000,
-		limit: 60000
-	},
-
-	startTimer: function(data){
-		var fn = function(){
-			if (!this.running) this.send({data: data});
-		};
-		this.lastDelay = this.options.initialDelay;
-		this.timer = fn.delay(this.lastDelay, this);
-		this.completeCheck = function(response){
-			clearTimeout(this.timer);
-			this.lastDelay = (response) ? this.options.delay : (this.lastDelay + this.options.delay).min(this.options.limit);
-			this.timer = fn.delay(this.lastDelay, this);
-		};
-		return this.addEvent('complete', this.completeCheck);
-	},
-
-	stopTimer: function(){
-		clearTimeout(this.timer);
-		return this.removeEvent('complete', this.completeCheck);
-	}
-
-});
-
-
-/*
----
-
 script: Assets.js
 
 name: Assets
@@ -8059,23 +6957,23 @@ var Asset = {
 
 		var script = new Element('script', {src: source, type: 'text/javascript'}),
 			doc = properties.document || document,
-			loaded = 0,
-			loadEvent = properties.onload || properties.onLoad;
-
-		var load = loadEvent ? function(){ // make sure we only call the event once
-			if (++loaded == 1) loadEvent.call(this);
-		} : function(){};
+			load = properties.onload || properties.onLoad;
 
 		delete properties.onload;
 		delete properties.onLoad;
 		delete properties.document;
 
-		return script.addEvents({
-			load: load,
-			readystatechange: function(){
-				if (['loaded', 'complete'].contains(this.readyState)) load.call(this);
+		if (load){
+			if (typeof script.onreadystatechange != 'undefined'){
+				script.addEvent('readystatechange', function(){
+					if (['loaded', 'complete'].contains(this.readyState)) load.call(this);
+				});
+			} else {
+				script.addEvent('load', load);
 			}
-		}).set(properties).inject(doc.head);
+		}
+
+		return script.set(properties).inject(doc.head);
 	},
 
 	css: function(source, properties){
@@ -8165,232 +7063,6 @@ var Asset = {
 /*
 ---
 
-script: Color.js
-
-name: Color
-
-description: Class for creating and manipulating colors in JavaScript. Supports HSB -> RGB Conversions and vice versa.
-
-license: MIT-style license
-
-authors:
-  - Valerio Proietti
-
-requires:
-  - Core/Array
-  - Core/String
-  - Core/Number
-  - Core/Hash
-  - Core/Function
-  - MooTools.More
-
-provides: [Color]
-
-...
-*/
-
-(function(){
-
-var Color = this.Color = new Type('Color', function(color, type){
-	if (arguments.length >= 3){
-		type = 'rgb'; color = Array.slice(arguments, 0, 3);
-	} else if (typeof color == 'string'){
-		if (color.match(/rgb/)) color = color.rgbToHex().hexToRgb(true);
-		else if (color.match(/hsb/)) color = color.hsbToRgb();
-		else color = color.hexToRgb(true);
-	}
-	type = type || 'rgb';
-	switch (type){
-		case 'hsb':
-			var old = color;
-			color = color.hsbToRgb();
-			color.hsb = old;
-		break;
-		case 'hex': color = color.hexToRgb(true); break;
-	}
-	color.rgb = color.slice(0, 3);
-	color.hsb = color.hsb || color.rgbToHsb();
-	color.hex = color.rgbToHex();
-	return Object.append(color, this);
-});
-
-Color.implement({
-
-	mix: function(){
-		var colors = Array.slice(arguments);
-		var alpha = (typeOf(colors.getLast()) == 'number') ? colors.pop() : 50;
-		var rgb = this.slice();
-		colors.each(function(color){
-			color = new Color(color);
-			for (var i = 0; i < 3; i++) rgb[i] = Math.round((rgb[i] / 100 * (100 - alpha)) + (color[i] / 100 * alpha));
-		});
-		return new Color(rgb, 'rgb');
-	},
-
-	invert: function(){
-		return new Color(this.map(function(value){
-			return 255 - value;
-		}));
-	},
-
-	setHue: function(value){
-		return new Color([value, this.hsb[1], this.hsb[2]], 'hsb');
-	},
-
-	setSaturation: function(percent){
-		return new Color([this.hsb[0], percent, this.hsb[2]], 'hsb');
-	},
-
-	setBrightness: function(percent){
-		return new Color([this.hsb[0], this.hsb[1], percent], 'hsb');
-	}
-
-});
-
-this.$RGB = function(r, g, b){
-	return new Color([r, g, b], 'rgb');
-};
-
-this.$HSB = function(h, s, b){
-	return new Color([h, s, b], 'hsb');
-};
-
-this.$HEX = function(hex){
-	return new Color(hex, 'hex');
-};
-
-Array.implement({
-
-	rgbToHsb: function(){
-		var red = this[0],
-				green = this[1],
-				blue = this[2],
-				hue = 0;
-		var max = Math.max(red, green, blue),
-				min = Math.min(red, green, blue);
-		var delta = max - min;
-		var brightness = max / 255,
-				saturation = (max != 0) ? delta / max : 0;
-		if (saturation != 0){
-			var rr = (max - red) / delta;
-			var gr = (max - green) / delta;
-			var br = (max - blue) / delta;
-			if (red == max) hue = br - gr;
-			else if (green == max) hue = 2 + rr - br;
-			else hue = 4 + gr - rr;
-			hue /= 6;
-			if (hue < 0) hue++;
-		}
-		return [Math.round(hue * 360), Math.round(saturation * 100), Math.round(brightness * 100)];
-	},
-
-	hsbToRgb: function(){
-		var br = Math.round(this[2] / 100 * 255);
-		if (this[1] == 0){
-			return [br, br, br];
-		} else {
-			var hue = this[0] % 360;
-			var f = hue % 60;
-			var p = Math.round((this[2] * (100 - this[1])) / 10000 * 255);
-			var q = Math.round((this[2] * (6000 - this[1] * f)) / 600000 * 255);
-			var t = Math.round((this[2] * (6000 - this[1] * (60 - f))) / 600000 * 255);
-			switch (Math.floor(hue / 60)){
-				case 0: return [br, t, p];
-				case 1: return [q, br, p];
-				case 2: return [p, br, t];
-				case 3: return [p, q, br];
-				case 4: return [t, p, br];
-				case 5: return [br, p, q];
-			}
-		}
-		return false;
-	}
-
-});
-
-String.implement({
-
-	rgbToHsb: function(){
-		var rgb = this.match(/\d{1,3}/g);
-		return (rgb) ? rgb.rgbToHsb() : null;
-	},
-
-	hsbToRgb: function(){
-		var hsb = this.match(/\d{1,3}/g);
-		return (hsb) ? hsb.hsbToRgb() : null;
-	}
-
-});
-
-})();
-
-
-
-/*
----
-
-script: Group.js
-
-name: Group
-
-description: Class for monitoring collections of events
-
-license: MIT-style license
-
-authors:
-  - Valerio Proietti
-
-requires:
-  - Core/Events
-  - /MooTools.More
-
-provides: [Group]
-
-...
-*/
-
-(function(){
-
-this.Group = new Class({
-
-	initialize: function(){
-		this.instances = Array.flatten(arguments);
-		this.events = {};
-		this.checker = {};
-	},
-
-	addEvent: function(type, fn){
-		this.checker[type] = this.checker[type] || {};
-		this.events[type] = this.events[type] || [];
-		if (this.events[type].contains(fn)) return false;
-		else this.events[type].push(fn);
-		this.instances.each(function(instance, i){
-			instance.addEvent(type, this.check.pass([type, instance, i], this));
-		}, this);
-		return this;
-	},
-
-	check: function(type, instance, i){
-		this.checker[type][i] = true;
-		var every = this.instances.every(function(current, j){
-			return this.checker[type][j] || false;
-		}, this);
-		if (!every) return;
-		this.checker[type] = {};
-		this.events[type].each(function(event){
-			event.call(this, this.instances, instance);
-		}, this);
-	}
-
-});
-
-})();
-
-
-
-/*
----
-
 script: Hash.Cookie.js
 
 name: Hash.Cookie
@@ -8449,622 +7121,6 @@ Hash.each(Hash.prototype, function(method, name){
 		return value;
 	});
 });
-
-
-/*
----
-name: Table
-description: LUA-Style table implementation.
-license: MIT-style license
-authors:
-  - Valerio Proietti
-requires: [Core/Array]
-provides: [Table]
-...
-*/
-
-(function(){
-
-var Table = this.Table = function(){
-
-	this.length = 0;
-	var keys = [],
-	    values = [];
-	
-	this.set = function(key, value){
-		var index = keys.indexOf(key);
-		if (index == -1){
-			var length = keys.length;
-			keys[length] = key;
-			values[length] = value;
-			this.length++;
-		} else {
-			values[index] = value;
-		}
-		return this;
-	};
-
-	this.get = function(key){
-		var index = keys.indexOf(key);
-		return (index == -1) ? null : values[index];
-	};
-
-	this.erase = function(key){
-		var index = keys.indexOf(key);
-		if (index != -1){
-			this.length--;
-			keys.splice(index, 1);
-			return values.splice(index, 1)[0];
-		}
-		return null;
-	};
-
-	this.each = this.forEach = function(fn, bind){
-		for (var i = 0, l = this.length; i < l; i++) fn.call(bind, keys[i], values[i], this);
-	};
-	
-};
-
-if (this.Type) new Type('Table', Table);
-
-})();
-
-
-/*
----
-
-script: HtmlTable.js
-
-name: HtmlTable
-
-description: Builds table elements with methods to add rows.
-
-license: MIT-style license
-
-authors:
-  - Aaron Newton
-
-requires:
-  - Core/Options
-  - Core/Events
-  - /Class.Occlude
-
-provides: [HtmlTable]
-
-...
-*/
-
-var HtmlTable = new Class({
-
-	Implements: [Options, Events, Class.Occlude],
-
-	options: {
-		properties: {
-			cellpadding: 0,
-			cellspacing: 0,
-			border: 0
-		},
-		rows: [],
-		headers: [],
-		footers: []
-	},
-
-	property: 'HtmlTable',
-
-	initialize: function(){
-		var params = Array.link(arguments, {options: Type.isObject, table: Type.isElement, id: Type.isString});
-		this.setOptions(params.options);
-		if (!params.table && params.id) params.table = document.id(params.id);
-		this.element = params.table || new Element('table', this.options.properties);
-		if (this.occlude()) return this.occluded;
-		this.build();
-	},
-
-	build: function(){
-		this.element.store('HtmlTable', this);
-
-		this.body = document.id(this.element.tBodies[0]) || new Element('tbody').inject(this.element);
-		$$(this.body.rows);
-
-		if (this.options.headers.length) this.setHeaders(this.options.headers);
-		else this.thead = document.id(this.element.tHead);
-
-		if (this.thead) this.head = this.getHead();
-		if (this.options.footers.length) this.setFooters(this.options.footers);
-
-		this.tfoot = document.id(this.element.tFoot);
-		if (this.tfoot) this.foot = document.id(this.tfoot.rows[0]);
-
-		this.options.rows.each(function(row){
-			this.push(row);
-		}, this);
-	},
-
-	toElement: function(){
-		return this.element;
-	},
-
-	empty: function(){
-		this.body.empty();
-		return this;
-	},
-
-	set: function(what, items){
-		var target = (what == 'headers') ? 'tHead' : 'tFoot',
-			lower = target.toLowerCase();
-
-		this[lower] = (document.id(this.element[target]) || new Element(lower).inject(this.element, 'top')).empty();
-		var data = this.push(items, {}, this[lower], what == 'headers' ? 'th' : 'td');
-
-		if (what == 'headers') this.head = this.getHead();
-		else this.foot = this.getHead();
-
-		return data;
-	},
-
-	getHead: function(){
-		var rows = this.thead.rows;
-		return rows.length > 1 ? $$(rows) : rows.length ? document.id(rows[0]) : false;
-	},
-
-	setHeaders: function(headers){
-		this.set('headers', headers);
-		return this;
-	},
-
-	setFooters: function(footers){
-		this.set('footers', footers);
-		return this;
-	},
-
-	push: function(row, rowProperties, target, tag, where){
-		if (typeOf(row) == 'element' && row.get('tag') == 'tr'){
-			row.inject(target || this.body, where);
-			return {
-				tr: row,
-				tds: row.getChildren('td')
-			};
-		}
-
-		var tds = row.map(function(data){
-			var td = new Element(tag || 'td', data ? data.properties : {}),
-				content = (data ? data.content : '') || data,
-				type = typeOf(content);
-
-			if (['element', 'array', 'collection', 'elements'].contains(type)) td.adopt(content);
-			else td.set('html', content);
-
-			return td;
-		});
-
-		return {
-			tr: new Element('tr', rowProperties).inject(target || this.body, where).adopt(tds),
-			tds: tds
-		};
-	}
-
-});
-
-
-['adopt', 'inject', 'wraps', 'grab', 'replaces', 'dispose'].each(function(method){
-	HtmlTable.implement(method, function(){
-		this.element[method].apply(this.element, arguments);
-		return this;
-	});
-});
-
-
-
-
-/*
----
-
-script: HtmlTable.Zebra.js
-
-name: HtmlTable.Zebra
-
-description: Builds a stripy table with methods to add rows.
-
-license: MIT-style license
-
-authors:
-  - Harald Kirschner
-  - Aaron Newton
-
-requires:
-  - /HtmlTable
-  - /Class.refactor
-
-provides: [HtmlTable.Zebra]
-
-...
-*/
-
-HtmlTable = Class.refactor(HtmlTable, {
-
-	options: {
-		classZebra: 'table-tr-odd',
-		zebra: true
-	},
-
-	initialize: function(){
-		this.previous.apply(this, arguments);
-		if (this.occluded) return this.occluded;
-		if (this.options.zebra) this.updateZebras();
-	},
-
-	updateZebras: function(){
-		Array.each(this.body.rows, this.zebra, this);
-	},
-
-	setRowStyle: function(row, i){
-		if (this.previous) this.previous(row, i);
-		this.zebra(row, i);
-	},
-
-	zebra: function(row, i){
-		return row[((i % 2) ? 'remove' : 'add')+'Class'](this.options.classZebra);
-	},
-
-	push: function(){
-		var pushed = this.previous.apply(this, arguments);
-		if (this.options.zebra) this.updateZebras();
-		return pushed;
-	}
-
-});
-
-
-/*
----
-
-script: HtmlTable.Sort.js
-
-name: HtmlTable.Sort
-
-description: Builds a stripy, sortable table with methods to add rows.
-
-license: MIT-style license
-
-authors:
-  - Harald Kirschner
-  - Aaron Newton
-  - Jacob Thornton
-
-requires:
-  - Core/Hash
-  - /HtmlTable
-  - /Class.refactor
-  - /Element.Delegation
-  - /String.Extras
-  - /Date
-
-provides: [HtmlTable.Sort]
-
-...
-*/
-
-HtmlTable = Class.refactor(HtmlTable, {
-
-	options: {/*
-		onSort: function(){}, */
-		sortIndex: 0,
-		sortReverse: false,
-		parsers: [],
-		defaultParser: 'string',
-		classSortable: 'table-sortable',
-		classHeadSort: 'table-th-sort',
-		classHeadSortRev: 'table-th-sort-rev',
-		classNoSort: 'table-th-nosort',
-		classGroupHead: 'table-tr-group-head',
-		classGroup: 'table-tr-group',
-		classCellSort: 'table-td-sort',
-		classSortSpan: 'table-th-sort-span',
-		sortable: false,
-		thSelector: 'th'
-	},
-
-	initialize: function (){
-		this.previous.apply(this, arguments);
-		if (this.occluded) return this.occluded;
-		this.sorted = {index: null, dir: 1};
-		this.bound = {
-			headClick: this.headClick.bind(this)
-		};
-		this.sortSpans = new Elements();
-		if (this.options.sortable){
-			this.enableSort();
-			if (this.options.sortIndex != null) this.sort(this.options.sortIndex, this.options.sortReverse);
-		}
-	},
-
-	attachSorts: function(attach){
-		this.detachSorts();
-		if (attach !== false) this.element.addEvent('click:relay(' + this.options.thSelector + ')', this.bound.headClick);
-	},
-
-	detachSorts: function(){
-		this.element.removeEvents('click:relay(' + this.options.thSelector + ')');
-	},
-
-	setHeaders: function(){
-		this.previous.apply(this, arguments);
-		if (this.sortEnabled) this.setParsers();
-	},
-
-	setParsers: function(){
-		this.parsers = this.detectParsers();
-	},
-
-	detectParsers: function(){
-		return this.head && this.head.getElements(this.options.thSelector).flatten().map(this.detectParser, this);
-	},
-
-	detectParser: function(cell, index){
-		if (cell.hasClass(this.options.classNoSort) || cell.retrieve('htmltable-parser')) return cell.retrieve('htmltable-parser');
-		var thDiv = new Element('div');
-		thDiv.adopt(cell.childNodes).inject(cell);
-		var sortSpan = new Element('span', {'class': this.options.classSortSpan}).inject(thDiv, 'top');
-		this.sortSpans.push(sortSpan);
-		var parser = this.options.parsers[index],
-			rows = this.body.rows,
-			cancel;
-		switch (typeOf(parser)){
-			case 'function': parser = {convert: parser}; cancel = true; break;
-			case 'string': parser = parser; cancel = true; break;
-		}
-		if (!cancel){
-			HtmlTable.ParserPriority.some(function(parserName){
-				var current = HtmlTable.Parsers[parserName],
-					match = current.match;
-				if (!match) return false;
-				for (var i = 0, j = rows.length; i < j; i++){
-					var cell = document.id(rows[i].cells[index]),
-						text = cell ? cell.get('html').clean() : '';
-					if (text && match.test(text)){
-						parser = current;
-						return true;
-					}
-				}
-			});
-		}
-		if (!parser) parser = this.options.defaultParser;
-		cell.store('htmltable-parser', parser);
-		return parser;
-	},
-
-	headClick: function(event, el){
-		if (!this.head || el.hasClass(this.options.classNoSort)) return;
-		return this.sort(Array.indexOf(this.head.getElements(this.options.thSelector).flatten(), el) % this.body.rows[0].cells.length);
-	},
-
-	serialize: function() {
-		var previousSerialization = this.previous.apply(this, arguments) || {};
-		if (this.options.sortable) {
-			previousSerialization.sortIndex = this.sorted.index;
-			previousSerialization.sortReverse = this.sorted.reverse;
-		}
-		return previousSerialization;
-	},
-
-	restore: function(tableState) {
-		if(this.options.sortable && tableState.sortIndex) {
-			this.sort(tableState.sortIndex, tableState.sortReverse);
-		}
-		this.previous.apply(this, arguments);
-	},
-
-	setSortedState: function(index, reverse){
-		if (reverse != null) this.sorted.reverse = reverse;
-		else if (this.sorted.index == index) this.sorted.reverse = !this.sorted.reverse;
-		else this.sorted.reverse = this.sorted.index == null;
-
-		if (index != null) this.sorted.index = index;
-	},
-
-	setHeadSort: function(sorted){
-		var head = $$(!this.head.length ? this.head.cells[this.sorted.index] : this.head.map(function(row){
-			return row.getElements(this.options.thSelector)[this.sorted.index];
-		}, this).clean());
-		if (!head.length) return;
-		if (sorted){
-			head.addClass(this.options.classHeadSort);
-			if (this.sorted.reverse) head.addClass(this.options.classHeadSortRev);
-			else head.removeClass(this.options.classHeadSortRev);
-		} else {
-			head.removeClass(this.options.classHeadSort).removeClass(this.options.classHeadSortRev);
-		}
-	},
-
-	setRowSort: function(data, pre){
-		var count = data.length,
-			body = this.body,
-			group,
-			rowIndex;
-
-		while (count){
-			var item = data[--count],
-				position = item.position,
-				row = body.rows[position];
-
-			if (row.disabled) continue;
-			if (!pre){
-				group = this.setGroupSort(group, row, item);
-				this.setRowStyle(row, count);
-			}
-			body.appendChild(row);
-
-			for (rowIndex = 0; rowIndex < count; rowIndex++){
-				if (data[rowIndex].position > position) data[rowIndex].position--;
-			}
-		}
-	},
-
-	setRowStyle: function(row, i){
-		this.previous(row, i);
-		row.cells[this.sorted.index].addClass(this.options.classCellSort);
-	},
-
-	setGroupSort: function(group, row, item){
-		if (group == item.value) row.removeClass(this.options.classGroupHead).addClass(this.options.classGroup);
-		else row.removeClass(this.options.classGroup).addClass(this.options.classGroupHead);
-		return item.value;
-	},
-
-	getParser: function(){
-		var parser = this.parsers[this.sorted.index];
-		return typeOf(parser) == 'string' ? HtmlTable.Parsers[parser] : parser;
-	},
-
-	sort: function(index, reverse, pre){
-		if (!this.head) return;
-
-		if (!pre){
-			this.clearSort();
-			this.setSortedState(index, reverse);
-			this.setHeadSort(true);
-		}
-
-		var parser = this.getParser();
-		if (!parser) return;
-
-		var rel;
-		if (!Browser.ie){
-			rel = this.body.getParent();
-			this.body.dispose();
-		}
-
-		var data = this.parseData(parser).sort(function(a, b){
-			if (a.value === b.value) return 0;
-			return a.value > b.value ? 1 : -1;
-		});
-
-		if (this.sorted.reverse == (parser == HtmlTable.Parsers['input-checked'])) data.reverse(true);
-		this.setRowSort(data, pre);
-
-		if (rel) rel.grab(this.body);
-		this.fireEvent('stateChanged');
-		return this.fireEvent('sort', [this.body, this.sorted.index]);
-	},
-
-	parseData: function(parser){
-		return Array.map(this.body.rows, function(row, i){
-			var value = parser.convert.call(document.id(row.cells[this.sorted.index]));
-			return {
-				position: i,
-				value: value
-			};
-		}, this);
-	},
-
-	clearSort: function(){
-		this.setHeadSort(false);
-		this.body.getElements('td').removeClass(this.options.classCellSort);
-	},
-
-	reSort: function(){
-		if (this.sortEnabled) this.sort.call(this, this.sorted.index, this.sorted.reverse);
-		return this;
-	},
-
-	enableSort: function(){
-		this.element.addClass(this.options.classSortable);
-		this.attachSorts(true);
-		this.setParsers();
-		this.sortEnabled = true;
-		return this;
-	},
-
-	disableSort: function(){
-		this.element.removeClass(this.options.classSortable);
-		this.attachSorts(false);
-		this.sortSpans.each(function(span){
-			span.destroy();
-		});
-		this.sortSpans.empty();
-		this.sortEnabled = false;
-		return this;
-	}
-
-});
-
-HtmlTable.ParserPriority = ['date', 'input-checked', 'input-value', 'float', 'number'];
-
-HtmlTable.Parsers = {
-
-	'date': {
-		match: /^\d{2}[-\/ ]\d{2}[-\/ ]\d{2,4}$/,
-		convert: function(){
-			var d = Date.parse(this.get('text').stripTags());
-			return (typeOf(d) == 'date') ? d.format('db') : '';
-		},
-		type: 'date'
-	},
-	'input-checked': {
-		match: / type="(radio|checkbox)" /,
-		convert: function(){
-			return this.getElement('input').checked;
-		}
-	},
-	'input-value': {
-		match: /<input/,
-		convert: function(){
-			return this.getElement('input').value;
-		}
-	},
-	'number': {
-		match: /^\d+[^\d.,]*$/,
-		convert: function(){
-			return this.get('text').stripTags().toInt();
-		},
-		number: true
-	},
-	'numberLax': {
-		match: /^[^\d]+\d+$/,
-		convert: function(){
-			return this.get('text').replace(/[^-?^0-9]/, '').stripTags().toInt();
-		},
-		number: true
-	},
-	'float': {
-		match: /^[\d]+\.[\d]+/,
-		convert: function(){
-			return this.get('text').replace(/[^-?^\d.]/, '').stripTags().toFloat();
-		},
-		number: true
-	},
-	'floatLax': {
-		match: /^[^\d]+[\d]+\.[\d]+$/,
-		convert: function(){
-			return this.get('text').replace(/[^-?^\d.]/, '').stripTags();
-		},
-		number: true
-	},
-	'string': {
-		match: null,
-		convert: function(){
-			return this.get('text').stripTags().toLowerCase();
-		}
-	},
-	'title': {
-		match: null,
-		convert: function(){
-			return this.title;
-		}
-	}
-
-};
-
-//<1.2compat>
-HtmlTable.Parsers = new Hash(HtmlTable.Parsers);
-//</1.2compat>
-
-HtmlTable.defineParsers = function(parsers){
-	HtmlTable.Parsers = Object.append(HtmlTable.Parsers, parsers);
-	for (var parser in parsers){
-		HtmlTable.ParserPriority.unshift(parser);
-	}
-};
 
 
 /*
@@ -9425,344 +7481,6 @@ Keyboard.getShortcuts = function(name, keyboard){
 /*
 ---
 
-script: HtmlTable.Select.js
-
-name: HtmlTable.Select
-
-description: Builds a stripy, sortable table with methods to add rows. Rows can be selected with the mouse or keyboard navigation.
-
-license: MIT-style license
-
-authors:
-  - Harald Kirschner
-  - Aaron Newton
-
-requires:
-  - /Keyboard
-  - /Keyboard.Extras
-  - /HtmlTable
-  - /Class.refactor
-  - /Element.Delegation
-  - /Element.Shortcuts
-
-provides: [HtmlTable.Select]
-
-...
-*/
-
-HtmlTable = Class.refactor(HtmlTable, {
-
-	options: {
-		/*onRowFocus: function(){},
-		onRowUnfocus: function(){},*/
-		useKeyboard: true,
-		classRowSelected: 'table-tr-selected',
-		classRowHovered: 'table-tr-hovered',
-		classSelectable: 'table-selectable',
-		shiftForMultiSelect: true,
-		allowMultiSelect: true,
-		selectable: false
-	},
-
-	initialize: function(){
-		this.previous.apply(this, arguments);
-		if (this.occluded) return this.occluded;
-
-		this.selectedRows = new Elements();
-
-		this.bound = {
-			mouseleave: this.mouseleave.bind(this),
-			clickRow: this.clickRow.bind(this),
-			activateKeyboard: function() {
-				if (this.keyboard && this.selectEnabled) this.keyboard.activate();
-			}.bind(this)
-		};
-
-		if (this.options.selectable) this.enableSelect();
-	},
-
-	empty: function(){
-		this.selectNone();
-		return this.previous();
-	},
-
-	enableSelect: function(){
-		this.selectEnabled = true;
-		this.attachSelects();
-		this.element.addClass(this.options.classSelectable);
-		return this;
-	},
-
-	disableSelect: function(){
-		this.selectEnabled = false;
-		this.attachSelects(false);
-		this.element.removeClass(this.options.classSelectable);
-		return this;
-	},
-
-	push: function(){
-		var ret = this.previous.apply(this, arguments);
-		this.updateSelects();
-		return ret;
-	},
-
-	isSelected: function(row){
-		return this.selectedRows.contains(row);
-	},
-
-	toggleRow: function(row){
-		return this[(this.isSelected(row) ? 'de' : '') + 'selectRow'](row);
-	},
-
-	selectRow: function(row, _nocheck){
-		//private variable _nocheck: boolean whether or not to confirm the row is in the table body
-		//added here for optimization when selecting ranges
-		if (this.isSelected(row) || (!_nocheck && !this.body.getChildren().contains(row))) return;
-		if (!this.options.allowMultiSelect) this.selectNone();
-
-		if (!this.isSelected(row)){
-			this.selectedRows.push(row);
-			row.addClass(this.options.classRowSelected);
-			this.fireEvent('rowFocus', [row, this.selectedRows]);
-			this.fireEvent('stateChanged');
-		}
-
-		this.focused = row;
-		document.clearSelection();
-
-		return this;
-	},
-
-	getSelected: function(){
-		return this.selectedRows;
-	},
-
-	serialize: function() {
-		var previousSerialization = this.previous.apply(this, arguments) || {};
-		if (this.options.selectable) {
-			previousSerialization.selectedRows = this.selectedRows.map(function(row) {
-				return Array.indexOf(this.body.rows, row);
-			}.bind(this));
-		}
-		return previousSerialization;
-	},
-
-	restore: function(tableState) {
-		if(this.options.selectable && tableState.selectedRows) {
-			tableState.selectedRows.each(function(index) {
-				this.selectRow(this.body.rows[index]);
-			}.bind(this));
-		}
-		this.previous.apply(this, arguments);
-	},
-
-	deselectRow: function(row, _nocheck){
-		if (!this.isSelected(row) || (!_nocheck && !this.body.getChildren().contains(row))) return;
-
-		this.selectedRows = new Elements(Array.from(this.selectedRows).erase(row));
-		row.removeClass(this.options.classRowSelected);
-		this.fireEvent('rowUnfocus', [row, this.selectedRows]);
-		this.fireEvent('stateChanged');
-		return this;
-	},
-
-	selectAll: function(selectNone){
-		if (!selectNone && !this.options.allowMultiSelect) return;
-		this.selectRange(0, this.body.rows.length, selectNone);
-		return this;
-	},
-
-	selectNone: function(){
-		return this.selectAll(true);
-	},
-
-	selectRange: function(startRow, endRow, _deselect){
-		if (!this.options.allowMultiSelect && !_deselect) return;
-		var method = _deselect ? 'deselectRow' : 'selectRow',
-			rows = Array.clone(this.body.rows);
-
-		if (typeOf(startRow) == 'element') startRow = rows.indexOf(startRow);
-		if (typeOf(endRow) == 'element') endRow = rows.indexOf(endRow);
-		endRow = endRow < rows.length - 1 ? endRow : rows.length - 1;
-
-		if (endRow < startRow){
-			var tmp = startRow;
-			startRow = endRow;
-			endRow = tmp;
-		}
-
-		for (var i = startRow; i <= endRow; i++) this[method](rows[i], true);
-
-		return this;
-	},
-
-	deselectRange: function(startRow, endRow){
-		this.selectRange(startRow, endRow, true);
-	},
-
-	getSelected: function(){
-		return this.selectedRows;
-	},
-
-/*
-	Private methods:
-*/
-
-	enterRow: function(row){
-		if (this.hovered) this.hovered = this.leaveRow(this.hovered);
-		this.hovered = row.addClass(this.options.classRowHovered);
-	},
-
-	leaveRow: function(row){
-		row.removeClass(this.options.classRowHovered);
-	},
-
-	updateSelects: function(){
-		Array.each(this.body.rows, function(row){
-			var binders = row.retrieve('binders');
-			if (!binders && !this.selectEnabled) return;
-			if (!binders){
-				binders = {
-					mouseenter: this.enterRow.pass([row], this),
-					mouseleave: this.leaveRow.pass([row], this)
-				};
-				row.store('binders', binders);
-			}
-			if (this.selectEnabled) row.addEvents(binders);
-			else row.removeEvents(binders);
-		}, this);
-	},
-
-	shiftFocus: function(offset, event){
-		if (!this.focused) return this.selectRow(this.body.rows[0], event);
-		var to = this.getRowByOffset(offset);
-		if (to === null || this.focused == this.body.rows[to]) return this;
-		this.toggleRow(this.body.rows[to], event);
-	},
-
-	clickRow: function(event, row){
-		var selecting = (event.shift || event.meta || event.control) && this.options.shiftForMultiSelect;
-		if (!selecting && !(event.rightClick && this.isSelected(row) && this.options.allowMultiSelect)) this.selectNone();
-
-		if (event.rightClick) this.selectRow(row);
-		else this.toggleRow(row);
-
-		if (event.shift){
-			this.selectRange(this.rangeStart || this.body.rows[0], row, this.rangeStart ? !this.isSelected(row) : true);
-			this.focused = row;
-		}
-		this.rangeStart = row;
-	},
-
-	getRowByOffset: function(offset){
-		if (!this.focused) return 0;
-		var rows = Array.clone(this.body.rows),
-			index = rows.indexOf(this.focused) + offset;
-
-		if (index < 0) index = null;
-		if (index >= rows.length) index = null;
-
-		return index;
-	},
-
-	attachSelects: function(attach){
-		attach = attach != null ? attach : true;
-
-		var method = attach ? 'addEvents' : 'removeEvents';
-		this.element[method]({
-			mouseleave: this.bound.mouseleave,
-			click: this.bound.activateKeyboard
-		});
-
-		this.body[method]({
-			'click:relay(tr)': this.bound.clickRow,
-			'contextmenu:relay(tr)': this.bound.clickRow
-		});
-
-		if (this.options.useKeyboard || this.keyboard){
-			if (!this.keyboard) this.keyboard = new Keyboard();
-			if (!this.selectKeysDefined) {
-				this.selectKeysDefined = true;
-				var timer, held;
-
-				var move = function(offset){
-					var mover = function(e){
-						clearTimeout(timer);
-						e.preventDefault();
-
-						var to = this.body.rows[this.getRowByOffset(offset)];
-						if (e.shift && to && this.isSelected(to)){
-							this.deselectRow(this.focused);
-							this.focused = to;
-						} else {
-							if (to && (!this.options.allowMultiSelect || !e.shift)){
-								this.selectNone();
-							}
-							this.shiftFocus(offset, e);
-						}
-
-						if (held){
-							timer = mover.delay(100, this, e);
-						} else {
-							timer = (function(){
-								held = true;
-								mover(e);
-							}).delay(400);
-						}
-					}.bind(this);
-					return mover;
-				}.bind(this);
-
-				var clear = function(){
-					clearTimeout(timer);
-					held = false;
-				};
-				
-				this.keyboard.addEvents({
-					'keydown:shift+up': move(-1),
-					'keydown:shift+down': move(1),
-					'keyup:shift+up': clear,
-					'keyup:shift+down': clear,
-					'keyup:up': clear,
-					'keyup:down': clear
-				});
-
-				var shiftHint = '';
-				if (this.options.allowMultiSelect && this.options.shiftForMultiSelect && this.options.useKeyboard){
-					shiftHint = " (Shift multi-selects).";
-				}
-
-				this.keyboard.addShortcuts({
-					'Select Previous Row': {
-						keys: 'up',
-						shortcut: 'up arrow',
-						handler: move(-1),
-						description: 'Select the previous row in the table.' + shiftHint
-					},
-					'Select Next Row': {
-						keys: 'down',
-						shortcut: 'down arrow',
-						handler: move(1),
-						description: 'Select the next row in the table.' + shiftHint
-					}
-				});
-
-			}
-			this.keyboard[attach ? 'activate' : 'deactivate']();
-		}
-		this.updateSelects();
-	},
-
-	mouseleave: function(){
-		if (this.hovered) this.leaveRow(this.hovered);
-	}
-
-});
-
-
-/*
----
-
 script: Scroller.js
 
 name: Scroller
@@ -9864,285 +7582,4 @@ var Scroller = new Class({
 	}
 
 });
-
-
-/*
----
-
-script: Tips.js
-
-name: Tips
-
-description: Class for creating nice tips that follow the mouse cursor when hovering an element.
-
-license: MIT-style license
-
-authors:
-  - Valerio Proietti
-  - Christoph Pojer
-  - Luis Merino
-
-requires:
-  - Core/Options
-  - Core/Events
-  - Core/Element.Event
-  - Core/Element.Style
-  - Core/Element.Dimensions
-  - /MooTools.More
-
-provides: [Tips]
-
-...
-*/
-
-(function(){
-
-var read = function(option, element){
-	return (option) ? (typeOf(option) == 'function' ? option(element) : element.get(option)) : '';
-};
-
-this.Tips = new Class({
-
-	Implements: [Events, Options],
-
-	options: {/*
-		onAttach: function(element){},
-		onDetach: function(element){},
-		onBound: function(coords){},*/
-		onShow: function(){
-			this.tip.setStyle('display', 'block');
-		},
-		onHide: function(){
-			this.tip.setStyle('display', 'none');
-		},
-		title: 'title',
-		text: function(element){
-			return element.get('rel') || element.get('href');
-		},
-		showDelay: 100,
-		hideDelay: 100,
-		className: 'tip-wrap',
-		offset: {x: 16, y: 16},
-		windowPadding: {x:0, y:0},
-		fixed: false
-	},
-
-	initialize: function(){
-		var params = Array.link(arguments, {
-			options: Type.isObject,
-			elements: function(obj){
-				return obj != null;
-			}
-		});
-		this.setOptions(params.options);
-		if (params.elements) this.attach(params.elements);
-		this.container = new Element('div', {'class': 'tip'});
-	},
-
-	toElement: function(){
-		if (this.tip) return this.tip;
-
-		this.tip = new Element('div', {
-			'class': this.options.className,
-			styles: {
-				position: 'absolute',
-				top: 0,
-				left: 0
-			}
-		}).adopt(
-			new Element('div', {'class': 'tip-top'}),
-			this.container,
-			new Element('div', {'class': 'tip-bottom'})
-		);
-
-		return this.tip;
-	},
-
-	attach: function(elements){
-		$$(elements).each(function(element){
-			var title = read(this.options.title, element),
-				text = read(this.options.text, element);
-
-			element.set('title', '').store('tip:native', title).retrieve('tip:title', title);
-			element.retrieve('tip:text', text);
-			this.fireEvent('attach', [element]);
-
-			var events = ['enter', 'leave'];
-			if (!this.options.fixed) events.push('move');
-
-			events.each(function(value){
-				var event = element.retrieve('tip:' + value);
-				if (!event) event = function(event){
-					this['element' + value.capitalize()].apply(this, [event, element]);
-				}.bind(this);
-
-				element.store('tip:' + value, event).addEvent('mouse' + value, event);
-			}, this);
-		}, this);
-
-		return this;
-	},
-
-	detach: function(elements){
-		$$(elements).each(function(element){
-			['enter', 'leave', 'move'].each(function(value){
-				element.removeEvent('mouse' + value, element.retrieve('tip:' + value)).eliminate('tip:' + value);
-			});
-
-			this.fireEvent('detach', [element]);
-
-			if (this.options.title == 'title'){ // This is necessary to check if we can revert the title
-				var original = element.retrieve('tip:native');
-				if (original) element.set('title', original);
-			}
-		}, this);
-
-		return this;
-	},
-
-	elementEnter: function(event, element){
-		clearTimeout(this.timer);
-		this.timer = (function(){
-			this.container.empty();
-
-			['title', 'text'].each(function(value){
-				var content = element.retrieve('tip:' + value);
-				var div = this['_' + value + 'Element'] = new Element('div', {
-						'class': 'tip-' + value
-					}).inject(this.container);
-				if (content) this.fill(div, content);
-			}, this);
-			this.show(element);
-			this.position((this.options.fixed) ? {page: element.getPosition()} : event);
-		}).delay(this.options.showDelay, this);
-	},
-
-	elementLeave: function(event, element){
-		clearTimeout(this.timer);
-		this.timer = this.hide.delay(this.options.hideDelay, this, element);
-		this.fireForParent(event, element);
-	},
-
-	setTitle: function(title){
-		if (this._titleElement){
-			this._titleElement.empty();
-			this.fill(this._titleElement, title);
-		}
-		return this;
-	},
-
-	setText: function(text){
-		if (this._textElement){
-			this._textElement.empty();
-			this.fill(this._textElement, text);
-		}
-		return this;
-	},
-
-	fireForParent: function(event, element){
-		element = element.getParent();
-		if (!element || element == document.body) return;
-		if (element.retrieve('tip:enter')) element.fireEvent('mouseenter', event);
-		else this.fireForParent(event, element);
-	},
-
-	elementMove: function(event, element){
-		this.position(event);
-	},
-
-	position: function(event){
-		if (!this.tip) document.id(this);
-
-		var size = window.getSize(), scroll = window.getScroll(),
-			tip = {x: this.tip.offsetWidth, y: this.tip.offsetHeight},
-			props = {x: 'left', y: 'top'},
-			bounds = {y: false, x2: false, y2: false, x: false},
-			obj = {};
-
-		for (var z in props){
-			obj[props[z]] = event.page[z] + this.options.offset[z];
-			if (obj[props[z]] < 0) bounds[z] = true;
-			if ((obj[props[z]] + tip[z] - scroll[z]) > size[z] - this.options.windowPadding[z]){
-				obj[props[z]] = event.page[z] - this.options.offset[z] - tip[z];
-				bounds[z+'2'] = true;
-			}
-		}
-
-		this.fireEvent('bound', bounds);
-		this.tip.setStyles(obj);
-	},
-
-	fill: function(element, contents){
-		if (typeof contents == 'string') element.set('html', contents);
-		else element.adopt(contents);
-	},
-
-	show: function(element){
-		if (!this.tip) document.id(this);
-		if (!this.tip.getParent()) this.tip.inject(document.body);
-		this.fireEvent('show', [this.tip, element]);
-	},
-
-	hide: function(element){
-		if (!this.tip) document.id(this);
-		this.fireEvent('hide', [this.tip, element]);
-	}
-
-});
-
-})();
-
-
-/*
----
-
-script: Locale.Set.From.js
-
-name: Locale.Set.From
-
-description: Provides an alternative way to create Locale.Set objects.
-
-license: MIT-style license
-
-authors:
-  - Tim Wienk
-
-requires:
-  - Core/JSON
-  - /Locale
-
-provides: Locale.Set.From
-
-...
-*/
-
-(function(){
-
-var parsers = {
-	'json': JSON.decode
-};
-
-Locale.Set.defineParser = function(name, fn){
-	parsers[name] = fn;
-};
-
-Locale.Set.from = function(set, type){
-	if (instanceOf(set, Locale.Set)) return set;
-
-	if (!type && typeOf(set) == 'string') type = 'json';
-	if (parsers[type]) set = parsers[type](set);
-
-	var locale = new Locale.Set;
-
-	locale.sets = set.sets || {};
-
-	if (set.inherits){
-		locale.inherits.locales = Array.from(set.inherits.locales);
-		locale.inherits.sets = set.inherits.sets || {};
-	}
-
-	return locale;
-};
-
-})();
 
