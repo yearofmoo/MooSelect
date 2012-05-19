@@ -190,9 +190,24 @@ MooSelect.implement({
   populate : function(input) {
     input = input || this.getInput();
     var options = input.options; 
-    var items = input.getElements('> *');
+    var items = [], nodes  = input.childNodes;
+    var ELEMENT_NODE = 1;
+    for(var i=0;i<nodes.length;i++) {
+      var node = nodes[i];
+      if(node.nodeType == ELEMENT_NODE) {
+        items.push(node);
+      }
+    };
+
     var groups = [], options = [];
-    var selected = input.selectedIndex ? input.selectedIndex : input.options.selectedIndex;
+    var selected = [];
+
+    if(this.isMultiple()) {
+
+    }
+    else {
+      selected.push(input.selectedIndex ? input.selectedIndex : input.options.selectedIndex);
+    }
 
     items.each(function(item) {
       var array = item.get('tag') == 'optgroup' ? groups : options;
@@ -211,17 +226,33 @@ MooSelect.implement({
 
     //just in case it wasn't picked up
     if(selected >= 0 && !this.hasSelectedValue()) {
-      var result = this.getResults().getResult(selected);
-      if(result) {
-        result.select();
-      }
+      this.selectOptions(selected);
     }
 
     if(!this.isMultiple() && this.options.selectFirstOnDefault && !this.hasSelectedValue()) {
-      this.getResults().selectFirst();
+      this.selectOptions(0);
     }
 
     this.fireEvent('populate',[items,results]);
+  },
+
+  selectOptions : function(indices) {
+    indices = typeOf(indices) == 'array' ? indices : [indices];
+    if(this.isMultiple()) {
+      var index = indices[0];
+      if(index) {
+        this.getResults().getResult(index).select();
+      }
+    }
+    else {
+      var results = this.getResults().getResults();
+      for(var i=0;i<indices.length;i++) {
+        var result = results[i];
+        if(result) {
+          result.select();
+        }
+      }
+    }
   },
 
   buildGroups : function(groups) {

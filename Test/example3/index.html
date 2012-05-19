@@ -1,0 +1,75 @@
+<!DOCTYPE html> 
+<html lang="en"> 
+<head> 
+<title>MooSelect Example</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /> 
+<link rel="stylesheet" type="text/css" href="../Assets/reset.css" /> 
+<link rel="stylesheet" type="text/css" href="../../Source/include/MooTools-Formular/Source/Formular.css" /> 
+<link rel="stylesheet" type="text/css" href="../../Source/MooSelect.css" /> 
+<style type="text/css">
+body {
+  font-family:helvetica;
+  font-size:15px;
+  padding:50px 50px 0;
+}
+select {
+  width:500px;
+}
+form {
+  position:relative;
+  background:red;
+  overflow:visible;
+}
+form > div {
+  margin-top:200px;
+}
+</style>
+</head> 
+
+<body id="" class=""> 
+  <div id="wrapper">
+    <form action="./submit.php" method="post" id="form">
+      <a href="#" id="populate">Populate Custom Values</a>
+    <div>
+      <select id="input" name="post" multiple="multiple" placeholder="Please select your favourite countries" class="required validate-mooselect">
+      </select>
+    </div>
+    </form>
+  </div>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/mootools/1.4.5/mootools-yui-compressed.js"></script>
+<script type="text/javascript" src="../Assets/MooTools-more.js"></script>
+<script type="text/javascript" src="../../Source/include/MooTools-Formular/Source/Formular.js"></script>
+<script type="text/javascript" src="../../Source/src/MooSelect.Base.js"></script>
+<script type="text/javascript" src="../../Source/src/MooSelect.Locale.js"></script>
+<script type="text/javascript" src="../../Source/src/MooSelect.Message.js"></script>
+<script type="text/javascript" src="../../Source/src/MooSelect.Stage.js"></script>
+<script type="text/javascript" src="../../Source/src/MooSelect.Searcher.js"></script>
+<script type="text/javascript" src="../../Source/src/MooSelect.Result.js"></script>
+<script type="text/javascript" src="../../Source/src/MooSelect.Results.js"></script>
+<script type="text/javascript" src="../../Source/src/MooSelect.Remote.js"></script>
+<script type="text/javascript" src="../../Source/src/MooSelect.Results.Remote.js"></script>
+<script type="text/javascript" src="../../Source/src/MooSelect.Formular.js"></script>
+<script type="text/javascript">
+window.addEvent('domready',function() {
+
+    var elm = $('input');
+    var s = new MooSelect(elm,{
+      allowDeselectSingle : true  
+    });
+
+    $('populate').addEvent('click',function(event) {
+      event.stop();
+      var options = [1,2,3,4,4,5,6,7,8,8];
+      var html = '';
+      options.each(function(option,i) {
+        var s = i == 4 ? ' selected="selected"' : '';
+        html += '<option '+s+'value="'+option+'">'+option+'</option>';
+      });
+      elm.innerHTML = html;
+      s.populate();
+    });
+
+});
+</script>
+</body>
+</html> 
