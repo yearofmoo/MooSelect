@@ -1,2 +1,3 @@
-- repo: git://github.com/matsko/MooTools-Formular.git
+- repo: git://github.com/yearofmoo/MooTools-Formular.git
   path: Source/include/MooTools-Formular
+  keep: false
