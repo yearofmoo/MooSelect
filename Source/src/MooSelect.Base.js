@@ -74,6 +74,7 @@ MooSelect.implement({
     zIndex : 1000,
     performAutoTabIndexing : true,
     tabIndex : null,
+    defaultWidth : 400,
 
     //Class Related Prefixing
     className : 'container',
@@ -459,6 +460,12 @@ MooSelect.implement({
     var input = this.getInput();
     var sizes = input.getSize();
     this.inputWidth = sizes.x;
+    if(this.inputWidth == 0) {
+      this.inputWidth = parseInt(input.getStyle('width'));
+      if(this.inputWidth == 0) {
+        this.inputWidth = parseInt(this.options.defaultWidth);
+      }
+    }
     this.inputHeight = sizes.y;
     input.setStyles({
       display : 'none'
